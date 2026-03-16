@@ -1,35 +1,75 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Inventory Dashboard</title>
+  <meta charset="UTF-8">
+  <title>Smart Inventory Management System</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+    h1 { color: #333; }
+    nav { margin-bottom: 20px; }
+    nav a { 
+      margin-right: 15px; 
+      text-decoration: none; 
+      color: #007BFF; 
+      font-weight: bold;
+      padding: 5px 10px;
+      border: 1px solid #007BFF;
+      border-radius: 4px;
+    }
+    nav a:hover { 
+      background: #007BFF; 
+      color: #fff; 
+    }
+    iframe { 
+      width: 100%; 
+      height: 500px; 
+      border: 1px solid #ccc; 
+      border-radius: 5px;
+      background: #fff;
+      margin-top: 20px;
+    }
+    #stats { margin-top: 20px; background: #fff; padding: 15px; border-radius: 5px; border: 1px solid #ccc; }
+  </style>
 </head>
 <body>
-    <h1>Smart Inventory Management System</h1>
 
-    <ul>
-        <li><a href="items.html">Manage Items</a></li>
-        <li><a href="transactions.html">Stock Transactions</a></li>
-        <li><a href="reports.html">Reports</a></li>
-    </ul>
+  <h1>Smart Inventory Management System</h1>
+  
+  <!-- Navigation links -->
+  <nav>
+    <a href="items.html" target="content_frame">Items</a>
+    <a href="transactions.html" target="content_frame">Transactions</a>
+    <a href="reports.html" target="content_frame">Reports</a>
+  </nav>
 
-    <h2>Quick Stats</h2>
-    <div>
-        <p>Total Items: <span id="total-items">0</span></p>
-        <p>Total Transactions: <span id="total-transactions">0</span></p>
-    </div>
+  <!-- Quick Stats -->
+  <div id="stats">
+    <p>Total Items: <span id="total-items">0</span></p>
+    <p>Total Transactions: <span id="total-transactions">0</span></p>
+  </div>
 
-<script>
-async function loadStats() {
-    const itemsRes = await fetch("http://127.0.0.1:5000/items");
-    const items = await itemsRes.json();
-    document.getElementById("total-items").innerText = items.length;
+  <!-- Main display area -->
+  <iframe name="content_frame" src="items.html"></iframe>
 
-    const transRes = await fetch("http://127.0.0.1:5000/transactions");
-    const transactions = await transRes.json();
-    document.getElementById("total-transactions").innerText = transactions.length;
-}
+  <script>
+    async function loadStats() {
+        try {
+            const itemsRes = await fetch("http://127.0.0.1:5000/items");
+            const items = await itemsRes.json();
+            document.getElementById("total-items").innerText = items.length;
 
-loadStats();
-</script>
+            const transRes = await fetch("http://127.0.0.1:5000/transactions");
+            const transactions = await transRes.json();
+            document.getElementById("total-transactions").innerText = transactions.length;
+        } catch (err) {
+            console.error("Failed to load stats:", err);
+        }
+    }
+
+    loadStats();
+    // Optional: refresh stats every 10 seconds
+    setInterval(loadStats, 10000);
+  </script>
+
 </body>
 </html>

@@ -6,6 +6,22 @@ app = Flask(__name__)
 CORS(app)  # Allow frontend to make requests
 
 # =========================
+# CATEGORIES ENDPOINT
+# =========================
+@app.route("/categories", methods=["GET"])
+def get_categories():
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "DB connection failed"}), 500
+
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM categories")
+    categories = cursor.fetchall()
+    cursor.close()
+    close_connection(conn)
+    return jsonify(categories)
+
+# =========================
 # ITEMS ENDPOINTS
 # =========================
 
@@ -17,7 +33,13 @@ def get_items():
         return jsonify({"error": "DB connection failed"}), 500
 
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM items")
+    # Join to get category name
+    cursor.execute("""
+        SELECT items.item_id, items.item_name, items.quantity, items.unit_price,
+               categories.category_name
+        FROM items
+        LEFT JOIN categories ON items.category_id = categories.category_id
+    """)
     items = cursor.fetchall()
     cursor.close()
     close_connection(conn)
@@ -56,7 +78,14 @@ def get_transactions():
         return jsonify({"error": "DB connection failed"}), 500
 
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM transactions")
+    # Join to get item name
+    cursor.execute("""
+        SELECT transactions.transaction_id, transactions.item_id, transactions.type, transactions.quantity, transactions.date,
+               items.item_name
+        FROM transactions
+        LEFT JOIN items ON transactions.item_id = items.item_id
+        ORDER BY transactions.date DESC
+    """)
     transactions = cursor.fetchall()
     cursor.close()
     close_connection(conn)
