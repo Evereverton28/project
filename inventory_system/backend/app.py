@@ -1,80 +1,101 @@
 from flask import Flask, request, jsonify
-import mysql.connector
 from flask_cors import CORS
+from database import get_connection, close_connection
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Allow frontend to make requests
 
-db = mysql.connector.connect(
-    host="127.0.0.1",
-    user="inventory_user",
-    password="yourpassword",
-    database="inventory_db"
-)
+# =========================
+# ITEMS ENDPOINTS
+# =========================
 
 # Get all items
-@app.route('/items', methods=['GET'])
+@app.route("/items", methods=["GET"])
 def get_items():
-    cursor = db.cursor(dictionary=True)
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "DB connection failed"}), 500
+
+    cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM items")
     items = cursor.fetchall()
+    cursor.close()
+    close_connection(conn)
     return jsonify(items)
 
-# Add item
-@app.route('/items', methods=['POST'])
+# Add a new item
+@app.route("/items", methods=["POST"])
 def add_item():
-    data = request.json
-    cursor = db.cursor()
+    data = request.get_json()
+    item_name = data.get("item_name")
+    category_id = data.get("category_id")
+    quantity = data.get("quantity", 0)
+    unit_price = data.get("unit_price", 0.0)
 
-    sql = "INSERT INTO items (item_name, category_id, quantity, unit_price) VALUES (%s,%s,%s,%s)"
-    val = (data['item_name'], data['category_id'], data['quantity'], data['unit_price'])
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "DB connection failed"}), 500
 
-    cursor.execute(sql, val)
-    db.commit()
+    cursor = conn.cursor()
+    query = "INSERT INTO items (item_name, category_id, quantity, unit_price) VALUES (%s, %s, %s, %s)"
+    cursor.execute(query, (item_name, category_id, quantity, unit_price))
+    conn.commit()
+    cursor.close()
+    close_connection(conn)
+    return jsonify({"message": "Item added successfully"}), 201
 
-    return jsonify({"message": "Item added"})
+# =========================
+# TRANSACTIONS ENDPOINTS
+# =========================
 
-# Delete item
-@app.route('/items/<int:id>', methods=['DELETE'])
-def delete_item(id):
-    cursor = db.cursor()
-    cursor.execute("DELETE FROM items WHERE item_id=%s", (id,))
-    db.commit()
-
-    return jsonify({"message": "Item deleted"})
-
-# Stock transaction
-@app.route('/transactions', methods=['POST'])
-def transaction():
-    data = request.json
-    cursor = db.cursor()
-
-    item_id = data['item_id']
-    quantity = data['quantity']
-    ttype = data['type']
-
-    if ttype == "IN":
-        cursor.execute("UPDATE items SET quantity = quantity + %s WHERE item_id=%s",(quantity,item_id))
-    else:
-        cursor.execute("UPDATE items SET quantity = quantity - %s WHERE item_id=%s",(quantity,item_id))
-
-    cursor.execute(
-        "INSERT INTO transactions (item_id,type,quantity) VALUES (%s,%s,%s)",
-        (item_id,ttype,quantity)
-    )
-
-    db.commit()
-
-    return jsonify({"message":"Transaction recorded"})
-
-# Get transactions
-@app.route('/transactions', methods=['GET'])
+# Get all transactions
+@app.route("/transactions", methods=["GET"])
 def get_transactions():
-    cursor = db.cursor(dictionary=True)
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "DB connection failed"}), 500
+
+    cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM transactions")
-    data = cursor.fetchall()
+    transactions = cursor.fetchall()
+    cursor.close()
+    close_connection(conn)
+    return jsonify(transactions)
 
-    return jsonify(data)
+# Add a transaction
+@app.route("/transactions", methods=["POST"])
+def add_transaction():
+    data = request.get_json()
+    item_id = data.get("item_id")
+    trans_type = data.get("type")  # IN or OUT
+    quantity = data.get("quantity", 0)
 
-if __name__ == '__main__':
+    if trans_type not in ["IN", "OUT"]:
+        return jsonify({"error": "Transaction type must be IN or OUT"}), 400
+
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "DB connection failed"}), 500
+
+    cursor = conn.cursor()
+
+    # Insert transaction
+    query = "INSERT INTO transactions (item_id, type, quantity) VALUES (%s, %s, %s)"
+    cursor.execute(query, (item_id, trans_type, quantity))
+
+    # Update item quantity
+    if trans_type == "IN":
+        cursor.execute("UPDATE items SET quantity = quantity + %s WHERE item_id = %s", (quantity, item_id))
+    else:
+        cursor.execute("UPDATE items SET quantity = quantity - %s WHERE item_id = %s", (quantity, item_id))
+
+    conn.commit()
+    cursor.close()
+    close_connection(conn)
+    return jsonify({"message": "Transaction recorded successfully"}), 201
+
+# =========================
+# RUN APP
+# =========================
+if __name__ == "__main__":
     app.run(debug=True)
