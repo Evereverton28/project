@@ -1,45 +1,94 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Reports</title>
+    <meta charset="UTF-8">
+    <title>Transactions</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        input, select { padding: 5px; margin: 5px; }
+        button { padding: 5px 10px; }
+    </style>
 </head>
 <body>
-    <h1>Inventory Reports</h1>
+    <h1>Transactions</h1>
 
-    <h2>Item Summary</h2>
-    <table border="1">
+    <h2>Add Transaction</h2>
+    <form id="transactionForm">
+        <select id="item_id" required></select>
+        <select id="type" required>
+            <option value="IN">IN</option>
+            <option value="OUT">OUT</option>
+        </select>
+        <input type="number" id="quantity" placeholder="Quantity" required>
+        <button type="submit">Add Transaction</button>
+    </form>
+
+    <h2>All Transactions</h2>
+    <table>
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Name</th>
-                <th>Category</th>
+                <th>Item</th>
+                <th>Type</th>
                 <th>Quantity</th>
-                <th>Unit Price</th>
+                <th>Date</th>
             </tr>
         </thead>
-        <tbody id="report-items"></tbody>
+        <tbody id="transactionsTable"></tbody>
     </table>
 
-<script>
-async function loadReport() {
-    const res = await fetch("http://127.0.0.1:5000/items");
-    const data = await res.json();
+    <script>
+        async function loadItemsDropdown() {
+            const res = await fetch('http://127.0.0.1:5000/items');
+            const items = await res.json();
+            const select = document.getElementById('item_id');
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.item_id;
+                option.textContent = item.item_name;
+                select.appendChild(option);
+            });
+        }
 
-    let table = "";
-    data.forEach(item => {
-        table += `
-        <tr>
-            <td>${item.item_id}</td>
-            <td>${item.item_name}</td>
-            <td>${item.category_id}</td>
-            <td>${item.quantity}</td>
-            <td>${item.unit_price}</td>
-        </tr>`;
-    });
-    document.getElementById("report-items").innerHTML = table;
-}
+        async function loadTransactions() {
+            const res = await fetch('http://127.0.0.1:5000/transactions');
+            const transactions = await res.json();
+            const tbody = document.getElementById('transactionsTable');
+            tbody.innerHTML = '';
+            transactions.forEach(tx => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${tx.transaction_id}</td>
+                    <td>${tx.item_name}</td>
+                    <td>${tx.type}</td>
+                    <td>${tx.quantity}</td>
+                    <td>${tx.date}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
 
-loadReport();
-</script>
+        document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                item_id: document.getElementById('item_id').value,
+                type: document.getElementById('type').value,
+                quantity: document.getElementById('quantity').value
+            };
+            await fetch('http://127.0.0.1:5000/transactions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            e.target.reset();
+            loadTransactions();
+        });
+
+        loadItemsDropdown();
+        loadTransactions();
+    </script>
 </body>
 </html>

@@ -1,20 +1,31 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Manage Items</title>
+    <meta charset="UTF-8">
+    <title>Inventory Items</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        input, select { padding: 5px; margin: 5px; }
+        button { padding: 5px 10px; }
+    </style>
 </head>
 <body>
     <h1>Inventory Items</h1>
 
-    <h3>Add New Item</h3>
-    <input id="name" placeholder="Item Name">
-    <input id="category" placeholder="Category ID">
-    <input id="qty" placeholder="Quantity">
-    <input id="price" placeholder="Unit Price">
-    <button onclick="addItem()">Add Item</button>
+    <h2>Add New Item</h2>
+    <form id="itemForm">
+        <input type="text" id="item_name" placeholder="Item Name" required>
+        <select id="category_id" required></select>
+        <input type="number" id="quantity" placeholder="Quantity" required>
+        <input type="number" id="unit_price" placeholder="Unit Price" step="0.01" required>
+        <button type="submit">Add Item</button>
+    </form>
 
-    <h2>Items List</h2>
-    <table border="1">
+    <h2>All Items</h2>
+    <table>
         <thead>
             <tr>
                 <th>ID</th>
@@ -24,46 +35,63 @@
                 <th>Unit Price</th>
             </tr>
         </thead>
-        <tbody id="items"></tbody>
+        <tbody id="itemsTable"></tbody>
     </table>
 
-<script>
-async function loadItems() {
-    const res = await fetch("http://127.0.0.1:5000/items");
-    const data = await res.json();
+    <script>
+        // Fetch categories for dropdown
+        async function loadCategories() {
+            const res = await fetch('http://127.0.0.1:5000/categories');
+            const categories = await res.json();
+            const select = document.getElementById('category_id');
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.category_id;
+                option.textContent = cat.category_name;
+                select.appendChild(option);
+            });
+        }
 
-    let table = "";
-    data.forEach(item => {
-        table += `
-        <tr>
-            <td>${item.item_id}</td>
-            <td>${item.item_name}</td>
-            <td>${item.category_id}</td>
-            <td>${item.quantity}</td>
-            <td>${item.unit_price}</td>
-        </tr>`;
-    });
-    document.getElementById("items").innerHTML = table;
-}
+        // Fetch all items and display
+        async function loadItems() {
+            const res = await fetch('http://127.0.0.1:5000/items');
+            const items = await res.json();
+            const tbody = document.getElementById('itemsTable');
+            tbody.innerHTML = '';
+            items.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.item_id}</td>
+                    <td>${item.item_name}</td>
+                    <td>${item.category_name}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.unit_price}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
 
-async function addItem() {
-    const item = {
-        item_name: document.getElementById("name").value,
-        category_id: document.getElementById("category").value,
-        quantity: parseInt(document.getElementById("qty").value),
-        unit_price: parseFloat(document.getElementById("price").value)
-    };
+        // Add new item
+        document.getElementById('itemForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                item_name: document.getElementById('item_name').value,
+                category_id: document.getElementById('category_id').value,
+                quantity: document.getElementById('quantity').value,
+                unit_price: document.getElementById('unit_price').value
+            };
+            await fetch('http://127.0.0.1:5000/items', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            e.target.reset();
+            loadItems();
+        });
 
-    await fetch("http://127.0.0.1:5000/items", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(item)
-    });
-
-    loadItems();
-}
-
-loadItems();
-</script>
+        // Initial load
+        loadCategories();
+        loadItems();
+    </script>
 </body>
 </html>
