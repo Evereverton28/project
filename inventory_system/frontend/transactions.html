@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reports</title>
+</head>
+<body>
+    <h1>Inventory Reports</h1>
+
+    <h2>Item Summary</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+            </tr>
+        </thead>
+        <tbody id="report-items"></tbody>
+    </table>
+
+<script>
+async function loadReport() {
+    const res = await fetch("http://127.0.0.1:5000/items");
+    const data = await res.json();
+
+    let table = "";
+    data.forEach(item => {
+        table += `
+        <tr>
+            <td>${item.item_id}</td>
+            <td>${item.item_name}</td>
+            <td>${item.category_id}</td>
+            <td>${item.quantity}</td>
+            <td>${item.unit_price}</td>
+        </tr>`;
+    });
+    document.getElementById("report-items").innerHTML = table;
+}
+
+loadReport();
+</script>
+</body>
+</html>

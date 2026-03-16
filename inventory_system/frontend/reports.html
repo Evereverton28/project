@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Transactions</title>
+</head>
+<body>
+    <h1>Stock Transactions</h1>
+
+    <h3>Record Transaction</h3>
+    <input id="trans_item" placeholder="Item ID">
+    <input id="trans_type" placeholder="Type (IN/OUT)">
+    <input id="trans_qty" placeholder="Quantity">
+    <button onclick="recordTransaction()">Record Transaction</button>
+
+    <h2>Transaction History</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Item ID</th>
+                <th>Type</th>
+                <th>Quantity</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody id="transactions"></tbody>
+    </table>
+
+<script>
+async function loadTransactions() {
+    const res = await fetch("http://127.0.0.1:5000/transactions");
+    const data = await res.json();
+
+    let table = "";
+    data.forEach(t => {
+        table += `
+        <tr>
+            <td>${t.transaction_id}</td>
+            <td>${t.item_id}</td>
+            <td>${t.type}</td>
+            <td>${t.quantity}</td>
+            <td>${t.date}</td>
+        </tr>`;
+    });
+    document.getElementById("transactions").innerHTML = table;
+}
+
+async function recordTransaction() {
+    const transaction = {
+        item_id: parseInt(document.getElementById("trans_item").value),
+        type: document.getElementById("trans_type").value.toUpperCase(),
+        quantity: parseInt(document.getElementById("trans_qty").value)
+    };
+
+    await fetch("http://127.0.0.1:5000/transactions", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(transaction)
+    });
+
+    loadTransactions();
+}
+
+loadTransactions();
+</script>
+</body>
+</html>

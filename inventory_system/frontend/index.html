@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inventory Dashboard</title>
+</head>
+<body>
+    <h1>Smart Inventory Management System</h1>
+
+    <ul>
+        <li><a href="items.html">Manage Items</a></li>
+        <li><a href="transactions.html">Stock Transactions</a></li>
+        <li><a href="reports.html">Reports</a></li>
+    </ul>
+
+    <h2>Quick Stats</h2>
+    <div>
+        <p>Total Items: <span id="total-items">0</span></p>
+        <p>Total Transactions: <span id="total-transactions">0</span></p>
+    </div>
+
+<script>
+async function loadStats() {
+    const itemsRes = await fetch("http://127.0.0.1:5000/items");
+    const items = await itemsRes.json();
+    document.getElementById("total-items").innerText = items.length;
+
+    const transRes = await fetch("http://127.0.0.1:5000/transactions");
+    const transactions = await transRes.json();
+    document.getElementById("total-transactions").innerText = transactions.length;
+}
+
+loadStats();
+</script>
+</body>
+</html>
