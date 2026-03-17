@@ -14,19 +14,35 @@
 </nav>
 
 <div class="container">
-  <h2>Stock Transaction</h2>
+  <h2>Record Transaction</h2>
 
   <form id="transactionForm">
-    <select id="type">
+    <select id="itemSelect" required></select>
+
+    <select id="type" required>
       <option value="IN">Stock In</option>
       <option value="OUT">Stock Out</option>
     </select>
 
-    <input type="number" id="qty" placeholder="Quantity" min="1" required>
+    <input type="number" id="quantity" placeholder="Quantity" min="1" required>
+
     <button type="submit">Submit</button>
   </form>
+
+  <h3>Transaction History</h3>
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Type</th>
+        <th>Quantity</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody id="transactionTable"></tbody>
+  </table>
 </div>
 
-<script src="js/app.js"></script>
+<script src="js/transactions.js"></script>
 </body>
 </html>

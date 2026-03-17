@@ -1,73 +1,67 @@
-const API_URL = "http://127.0.0.1:5000/items";
+const API_ITEMS = "http://127.0.0.1:5000/items";
 
+// Elements
 const itemForm = document.getElementById("itemForm");
-const tableBody = document.getElementById("itemsTableBody");
+const itemsTableBody = document.getElementById("itemsTableBody");
 
-// Load all items
+// ------------------- Load Items -------------------
 function loadItems() {
-  fetch(API_URL)
+  fetch(API_ITEMS)
     .then(res => res.json())
     .then(items => {
-      tableBody.innerHTML = "";
+      itemsTableBody.innerHTML = "";
+
       items.forEach(item => {
         const row = document.createElement("tr");
         row.innerHTML = `
-          <td><input value="${item.item_name}" data-id="${item.item_id}" class="nameInput"></td>
-          <td><input value="${item.category}" data-id="${item.item_id}" class="categoryInput"></td>
-          <td><input type="number" value="${item.quantity}" data-id="${item.item_id}" class="quantityInput" min="1"></td>
-          <td><input type="number" value="${item.unit_price}" data-id="${item.item_id}" class="priceInput" min="0" step="0.01"></td>
+          <td>${item.item_name}</td>
+          <td>${item.category}</td>
+          <td>${item.quantity}</td>
+          <td>${item.unit_price}</td>
           <td>
-            <button onclick="updateItem(${item.item_id})">Update</button>
-            <button onclick="deleteItem(${item.item_id})">Delete</button>
+            <button class="deleteBtn" onclick="deleteItem(${item.item_id})">
+              <i class="fa-solid fa-trash"></i>
+            </button>
           </td>
         `;
-        tableBody.appendChild(row);
+        itemsTableBody.appendChild(row);
       });
     });
 }
 
-// Add new item
+// ------------------- Add Item -------------------
 itemForm.addEventListener("submit", e => {
   e.preventDefault();
+
   const name = document.getElementById("item_name").value.trim();
   const category = document.getElementById("category").value.trim();
   const quantity = parseInt(document.getElementById("quantity").value);
   const unit_price = parseFloat(document.getElementById("unit_price").value);
 
-  fetch(API_URL, {
+  if (!name || !category || quantity < 1 || unit_price < 0) {
+    alert("Please fill all fields correctly");
+    return;
+  }
+
+  fetch(API_ITEMS, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ item_name: name, category, quantity, unit_price })
   })
-  .then(res => res.json())
-  .then(() => {
-    itemForm.reset();
-    loadItems();
-  });
+    .then(res => res.json())
+    .then(data => {
+      alert(data.message || data.error);
+      itemForm.reset();
+      loadItems();
+    });
 });
 
-// Update item
-function updateItem(id) {
-  const name = document.querySelector(`.nameInput[data-id='${id}']`).value;
-  const category = document.querySelector(`.categoryInput[data-id='${id}']`).value;
-  const quantity = parseInt(document.querySelector(`.quantityInput[data-id='${id}']`).value);
-  const unit_price = parseFloat(document.querySelector(`.priceInput[data-id='${id}']`).value);
-
-  fetch(`${API_URL}/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ item_name: name, category, quantity, unit_price })
-  })
-  .then(res => res.json())
-  .then(() => loadItems());
-}
-
-// Delete item
+// ------------------- Delete Item -------------------
 function deleteItem(id) {
-  fetch(`${API_URL}/${id}`, { method: "DELETE" })
+  fetch(`${API_ITEMS}/${id}`, { method: "DELETE" })
     .then(res => res.json())
     .then(() => loadItems());
 }
 
-// Initial load
+// ------------------- Initial Load -------------------
 document.addEventListener("DOMContentLoaded", loadItems);
