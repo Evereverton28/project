@@ -20,14 +20,14 @@
 
   <!-- Add Item Form -->
   <form id="itemForm">
-    <input type="text" id="itemName" placeholder="Item Name" required>
+    <input type="text" id="item_name" placeholder="Item Name" required>
     
     <!-- Dynamic category dropdown -->
-    <input list="categoryList" id="categoryInput" placeholder="Category" required>
+    <input list="categoryList" id="category" placeholder="Category" required>
     <datalist id="categoryList"></datalist>
 
     <input type="number" id="quantity" placeholder="Quantity" min="1" required>
-    <input type="number" id="unitPrice" placeholder="Unit Price" min="0" step="0.01" required>
+    <input type="number" id="unit_price" placeholder="Unit Price" min="0" step="0.01" required>
     <button type="submit">Add Item</button>
   </form>
 
