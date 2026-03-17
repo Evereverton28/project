@@ -1,67 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Stock Transactions</title>
+  <title>Reports</title>
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <h1>Stock Transactions</h1>
 
-    <h3>Record Transaction</h3>
-    <input id="trans_item" placeholder="Item ID">
-    <input id="trans_type" placeholder="Type (IN/OUT)">
-    <input id="trans_qty" placeholder="Quantity">
-    <button onclick="recordTransaction()">Record Transaction</button>
+<nav>
+  <a href="index.html">Dashboard</a>
+  <a href="items.html">Items</a>
+  <a href="transactions.html">Transactions</a>
+  <a href="reports.html">Reports</a>
+</nav>
 
-    <h2>Transaction History</h2>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Item ID</th>
-                <th>Type</th>
-                <th>Quantity</th>
-                <th>Date</th>
-            </tr>
-        </thead>
-        <tbody id="transactions"></tbody>
-    </table>
+<div class="container">
+  <h2>Inventory Reports</h2>
 
-<script>
-async function loadTransactions() {
-    const res = await fetch("http://127.0.0.1:5000/transactions");
-    const data = await res.json();
+  <!-- Sample report table -->
+  <table id="reportTable" border="1" cellspacing="0" cellpadding="8" style="width:100%; text-align:left;">
+    <thead>
+      <tr>
+        <th>Item Name</th>
+        <th>Category</th>
+        <th>Stock Quantity</th>
+        <th>Unit Price</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Sample Item 1</td>
+        <td>Category A</td>
+        <td>50</td>
+        <td>100.00</td>
+      </tr>
+      <tr>
+        <td>Sample Item 2</td>
+        <td>Category B</td>
+        <td>30</td>
+        <td>150.00</td>
+      </tr>
+    </tbody>
+  </table>
 
-    let table = "";
-    data.forEach(t => {
-        table += `
-        <tr>
-            <td>${t.transaction_id}</td>
-            <td>${t.item_id}</td>
-            <td>${t.type}</td>
-            <td>${t.quantity}</td>
-            <td>${t.date}</td>
-        </tr>`;
-    });
-    document.getElementById("transactions").innerHTML = table;
-}
+</div>
 
-async function recordTransaction() {
-    const transaction = {
-        item_id: parseInt(document.getElementById("trans_item").value),
-        type: document.getElementById("trans_type").value.toUpperCase(),
-        quantity: parseInt(document.getElementById("trans_qty").value)
-    };
-
-    await fetch("http://127.0.0.1:5000/transactions", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(transaction)
-    });
-
-    loadTransactions();
-}
-
-loadTransactions();
-</script>
+<script src="js/app.js"></script>
 </body>
 </html>

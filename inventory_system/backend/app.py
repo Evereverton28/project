@@ -1,130 +1,100 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from database import get_connection, close_connection
+import sqlite3
 
 app = Flask(__name__)
-CORS(app)  # Allow frontend to make requests
+CORS(app)  # Allow frontend requests
 
-# =========================
-# CATEGORIES ENDPOINT
-# =========================
-@app.route("/categories", methods=["GET"])
-def get_categories():
-    conn = get_connection()
-    if not conn:
-        return jsonify({"error": "DB connection failed"}), 500
+# ---------------- Database setup ----------------
+def get_db():
+    conn = sqlite3.connect("inventory.db")
+    conn.row_factory = sqlite3.Row  # So we get dict-like rows
+    return conn
 
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM categories")
-    categories = cursor.fetchall()
-    cursor.close()
-    close_connection(conn)
-    return jsonify(categories)
+def init_db():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS items (
+        item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        item_name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        quantity INTEGER DEFAULT 0,
+        unit_price REAL DEFAULT 0.0
+    )
+    """)
+    conn.commit()
+    conn.close()
 
-# =========================
-# ITEMS ENDPOINTS
-# =========================
+init_db()  # Ensure table exists
 
-# Get all items
+# ---------------- CRUD ROUTES ----------------
+
+# READ: Get all items
 @app.route("/items", methods=["GET"])
 def get_items():
-    conn = get_connection()
-    if not conn:
-        return jsonify({"error": "DB connection failed"}), 500
-
-    cursor = conn.cursor(dictionary=True)
-    # Join to get category name
-    cursor.execute("""
-        SELECT items.item_id, items.item_name, items.quantity, items.unit_price,
-               categories.category_name
-        FROM items
-        LEFT JOIN categories ON items.category_id = categories.category_id
-    """)
-    items = cursor.fetchall()
-    cursor.close()
-    close_connection(conn)
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM items")
+    items = [dict(row) for row in cursor.fetchall()]
+    conn.close()
     return jsonify(items)
 
-# Add a new item
+# CREATE: Add new item
 @app.route("/items", methods=["POST"])
 def add_item():
     data = request.get_json()
-    item_name = data.get("item_name")
-    category_id = data.get("category_id")
+    name = data.get("item_name")
+    category = data.get("category")
     quantity = data.get("quantity", 0)
     unit_price = data.get("unit_price", 0.0)
 
-    conn = get_connection()
-    if not conn:
-        return jsonify({"error": "DB connection failed"}), 500
+    if not name or not category or quantity < 1 or unit_price < 0:
+        return jsonify({"error": "Invalid input"}), 400
 
+    conn = get_db()
     cursor = conn.cursor()
-    query = "INSERT INTO items (item_name, category_id, quantity, unit_price) VALUES (%s, %s, %s, %s)"
-    cursor.execute(query, (item_name, category_id, quantity, unit_price))
+    cursor.execute(
+        "INSERT INTO items (item_name, category, quantity, unit_price) VALUES (?, ?, ?, ?)",
+        (name, category, quantity, unit_price)
+    )
     conn.commit()
-    cursor.close()
-    close_connection(conn)
+    conn.close()
     return jsonify({"message": "Item added successfully"}), 201
 
-# =========================
-# TRANSACTIONS ENDPOINTS
-# =========================
-
-# Get all transactions
-@app.route("/transactions", methods=["GET"])
-def get_transactions():
-    conn = get_connection()
-    if not conn:
-        return jsonify({"error": "DB connection failed"}), 500
-
-    cursor = conn.cursor(dictionary=True)
-    # Join to get item name
-    cursor.execute("""
-        SELECT transactions.transaction_id, transactions.item_id, transactions.type, transactions.quantity, transactions.date,
-               items.item_name
-        FROM transactions
-        LEFT JOIN items ON transactions.item_id = items.item_id
-        ORDER BY transactions.date DESC
-    """)
-    transactions = cursor.fetchall()
-    cursor.close()
-    close_connection(conn)
-    return jsonify(transactions)
-
-# Add a transaction
-@app.route("/transactions", methods=["POST"])
-def add_transaction():
+# UPDATE: Modify an existing item
+@app.route("/items/<int:item_id>", methods=["PATCH"])
+def update_item(item_id):
     data = request.get_json()
-    item_id = data.get("item_id")
-    trans_type = data.get("type")  # IN or OUT
-    quantity = data.get("quantity", 0)
+    name = data.get("item_name")
+    category = data.get("category")
+    quantity = data.get("quantity")
+    unit_price = data.get("unit_price")
 
-    if trans_type not in ["IN", "OUT"]:
-        return jsonify({"error": "Transaction type must be IN or OUT"}), 400
+    if not name or not category or quantity < 0 or unit_price < 0:
+        return jsonify({"error": "Invalid input"}), 400
 
-    conn = get_connection()
-    if not conn:
-        return jsonify({"error": "DB connection failed"}), 500
-
+    conn = get_db()
     cursor = conn.cursor()
-
-    # Insert transaction
-    query = "INSERT INTO transactions (item_id, type, quantity) VALUES (%s, %s, %s)"
-    cursor.execute(query, (item_id, trans_type, quantity))
-
-    # Update item quantity
-    if trans_type == "IN":
-        cursor.execute("UPDATE items SET quantity = quantity + %s WHERE item_id = %s", (quantity, item_id))
-    else:
-        cursor.execute("UPDATE items SET quantity = quantity - %s WHERE item_id = %s", (quantity, item_id))
-
+    cursor.execute("""
+        UPDATE items
+        SET item_name=?, category=?, quantity=?, unit_price=?
+        WHERE item_id=?
+    """, (name, category, quantity, unit_price, item_id))
     conn.commit()
-    cursor.close()
-    close_connection(conn)
-    return jsonify({"message": "Transaction recorded successfully"}), 201
+    conn.close()
+    return jsonify({"message": "Item updated successfully"})
 
-# =========================
-# RUN APP
-# =========================
+# DELETE: Remove an item
+@app.route("/items/<int:item_id>", methods=["DELETE"])
+def delete_item(item_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM items WHERE item_id=?", (item_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "Item deleted successfully"})
+
+# ---------------- Run App ----------------
 if __name__ == "__main__":
     app.run(debug=True)

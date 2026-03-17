@@ -1,97 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Inventory Items</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        input, select { padding: 5px; margin: 5px; }
-        button { padding: 5px 10px; }
-    </style>
+  <title>Items</title>
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <h1>Inventory Items</h1>
 
-    <h2>Add New Item</h2>
-    <form id="itemForm">
-        <input type="text" id="item_name" placeholder="Item Name" required>
-        <select id="category_id" required></select>
-        <input type="number" id="quantity" placeholder="Quantity" required>
-        <input type="number" id="unit_price" placeholder="Unit Price" step="0.01" required>
-        <button type="submit">Add Item</button>
-    </form>
+<nav>
+  <a href="index.html">Dashboard</a>
+  <a href="items.html">Items</a>
+  <a href="reports.html">Reports</a>
+</nav>
 
-    <h2>All Items</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Quantity</th>
-                <th>Unit Price</th>
-            </tr>
-        </thead>
-        <tbody id="itemsTable"></tbody>
-    </table>
+<div class="container">
+  <h2>Inventory Items</h2>
 
-    <script>
-        // Fetch categories for dropdown
-        async function loadCategories() {
-            const res = await fetch('http://127.0.0.1:5000/categories');
-            const categories = await res.json();
-            const select = document.getElementById('category_id');
-            categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.category_id;
-                option.textContent = cat.category_name;
-                select.appendChild(option);
-            });
-        }
+  <form id="itemForm">
+    <input type="text" id="item_name" placeholder="Item Name" required>
+    <input type="text" id="category" placeholder="Category" required>
+    <input type="number" id="quantity" placeholder="Quantity" min="1" required>
+    <input type="number" id="unit_price" placeholder="Unit Price" min="0" step="0.01" required>
+    <button type="submit">Add Item</button>
+  </form>
 
-        // Fetch all items and display
-        async function loadItems() {
-            const res = await fetch('http://127.0.0.1:5000/items');
-            const items = await res.json();
-            const tbody = document.getElementById('itemsTable');
-            tbody.innerHTML = '';
-            items.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${item.item_id}</td>
-                    <td>${item.item_name}</td>
-                    <td>${item.category_name}</td>
-                    <td>${item.quantity}</td>
-                    <td>${item.unit_price}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+  <h3>Items List</h3>
+  <table id="itemsTable" border="1" cellspacing="0" cellpadding="8">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Category</th>
+        <th>Quantity</th>
+        <th>Price</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="itemsTableBody"></tbody>
+  </table>
+</div>
 
-        // Add new item
-        document.getElementById('itemForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-                item_name: document.getElementById('item_name').value,
-                category_id: document.getElementById('category_id').value,
-                quantity: document.getElementById('quantity').value,
-                unit_price: document.getElementById('unit_price').value
-            };
-            await fetch('http://127.0.0.1:5000/items', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            e.target.reset();
-            loadItems();
-        });
-
-        // Initial load
-        loadCategories();
-        loadItems();
-    </script>
+<script src="js/app.js"></script>
 </body>
 </html>
