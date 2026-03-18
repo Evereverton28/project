@@ -3,6 +3,7 @@
 <head>
   <title>Reports</title>
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 
@@ -11,7 +12,10 @@
   <a href="items.html">Items</a>
   <a href="transactions.html">Transactions</a>
   <a href="reports.html">Reports</a>
+  <span id="userInfo" style="margin-left:auto; margin-right:10px;"></span>
+  <button id="logoutBtn" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i></button>>
 </nav>
+<script src="js/auth.js"></script>
 
 <div class="container">
   <h2>Inventory Reports</h2>
@@ -21,12 +25,10 @@
       <h3>Total Items</h3>
       <p id="totalItems">0</p>
     </div>
-
     <div class="card">
       <h3>Total Stock Value</h3>
       <p id="totalValue">0</p>
     </div>
-
     <div class="card">
       <h3>Total Transactions</h3>
       <p id="totalTransactions">0</p>
@@ -46,5 +48,10 @@
 </div>
 
 <script src="js/reports.js"></script>
+<script>
+  const username = sessionStorage.getItem("username");
+  const userInfo = document.getElementById("userInfo");
+  if(username) userInfo.textContent = `Logged in as: ${username}`;
+</script>
 </body>
 </html>

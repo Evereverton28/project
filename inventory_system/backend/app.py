@@ -1,251 +1,220 @@
+# app.py
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sqlite3
+from database import get_connection, close_connection, initialize_db
+from werkzeug.security import generate_password_hash, check_password_hash
+import random, string
 
 app = Flask(__name__)
-CORS(app)  # Allow frontend requests
+CORS(app)
 
-# ---------------- Database setup ----------------
-def get_db():
-    conn = sqlite3.connect("inventory.db")
-    conn.row_factory = sqlite3.Row  # So we get dict-like rows
-    return conn
+# Initialize DB (tables + structure)
+initialize_db()
 
-# Initialize database and create tables if they don't exist
-def init_db():
-    conn = get_db()
+# ---------------- USERS ----------------
+@app.route("/signup", methods=["POST"])
+def signup():
+    data = request.get_json()
+    username = data.get("username")
+    email = data.get("email")
+    password = data.get("password")
+
+    if not username or not email or not password:
+        return jsonify({"error": "Missing fields"}), 400
+
+    hashed = generate_password_hash(password)
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
+            (username, email, hashed)
+        )
+        conn.commit()
+        user_id = cursor.lastrowid
+        # ✅ Immediately log in the user
+        return jsonify({"user_id": user_id, "username": username}), 201
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Username or email already exists"}), 409
+    finally:
+        close_connection(conn)
+
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    username = data.get("username")
+    password = data.get("password")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE username=?", (username,))
+    user = cursor.fetchone()
+    close_connection(conn)
+
+    if user and check_password_hash(user["password"], password):
+        return jsonify({"user_id": user["id"], "username": user["username"]})
+    return jsonify({"error": "Invalid credentials"}), 401
+
+# ---------------- DELETE USER ----------------
+@app.route("/users/<int:user_id>", methods=["DELETE"])
+def delete_user(user_id):
+    conn = get_connection()
     cursor = conn.cursor()
     
-    # Items table
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS items (
-        item_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        item_name TEXT NOT NULL,
-        category_id INTEGER,
-        quantity INTEGER DEFAULT 0,
-        unit_price REAL DEFAULT 0.0,
-        FOREIGN KEY (category_id) REFERENCES categories(category_id)
-    )
-    """)
-
-    # Categories table
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS categories (
-        category_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        category_name TEXT UNIQUE NOT NULL
-    )
-    """)
+    # Check if user exists
+    cursor.execute("SELECT * FROM users WHERE id=?", (user_id,))
+    user = cursor.fetchone()
+    if not user:
+        close_connection(conn)
+        return {"error": "User not found"}, 404
     
-    # Transactions table
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS transactions (
-        transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        item_id INTEGER,
-        type TEXT CHECK(type IN ('IN','OUT')),
-        quantity INTEGER,
-        date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (item_id) REFERENCES items(item_id)
-    )
-    """)
-
+    # Delete the user
+    cursor.execute("DELETE FROM users WHERE id=?", (user_id,))
     conn.commit()
-    conn.close()
+    close_connection(conn)
+    
+    return {"success": True, "message": f"User {user_id} deleted"}
 
-init_db()
+# ---------------- ITEMS ----------------
+@app.route("/items", methods=["GET", "POST"])
+def items():
+    user_id = request.args.get("user_id") or request.json.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Missing user_id"}), 400
 
-# ---------------- CRUD ROUTES ----------------
-
-# READ: Get all items
-@app.route("/items", methods=["GET"])
-def get_items():
-    conn = get_db()
+    conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM items")
-    items = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return jsonify(items)
 
-# CREATE: Add new item
-@app.route("/items", methods=["POST"])
-def add_item():
-    data = request.get_json()
-    name = data.get("item_name")
-    category = data.get("category")
-    quantity = data.get("quantity", 0)
-    unit_price = data.get("unit_price", 0.0)
+    if request.method == "GET":
+        cursor.execute("SELECT * FROM items WHERE user_id=?", (user_id,))
+        items = [dict(row) for row in cursor.fetchall()]
+        close_connection(conn)
+        return jsonify(items)
 
-    if not name or not category or quantity < 1 or unit_price < 0:
-        return jsonify({"error": "Invalid input"}), 400
+    if request.method == "POST":
+        data = request.get_json()
+        name = data.get("item_name")
+        category = data.get("category")
+        quantity = data.get("quantity", 0)
+        unit_price = data.get("unit_price", 0.0)
+        try:
+            cursor.execute(
+                "INSERT INTO items (user_id, item_name, category, quantity, unit_price) VALUES (?, ?, ?, ?, ?)",
+                (user_id, name, category, quantity, unit_price)
+            )
+            conn.commit()
+            return jsonify({"message": "Item added"}), 201
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+        finally:
+            close_connection(conn)
 
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO items (item_name, category, quantity, unit_price) VALUES (?, ?, ?, ?)",
-        (name, category, quantity, unit_price)
-    )
-    conn.commit()
-    conn.close()
-    return jsonify({"message": "Item added successfully"}), 201
-
-# UPDATE: Modify an existing item
-@app.route("/items/<int:item_id>", methods=["PATCH"])
-def update_item(item_id):
-    data = request.get_json()
-    name = data.get("item_name")
-    category = data.get("category")
-    quantity = data.get("quantity")
-    unit_price = data.get("unit_price")
-
-    if not name or not category or quantity < 0 or unit_price < 0:
-        return jsonify({"error": "Invalid input"}), 400
-
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE items
-        SET item_name=?, category=?, quantity=?, unit_price=?
-        WHERE item_id=?
-    """, (name, category, quantity, unit_price, item_id))
-    conn.commit()
-    conn.close()
-    return jsonify({"message": "Item updated successfully"})
-
-# DELETE: Remove an item
 @app.route("/items/<int:item_id>", methods=["DELETE"])
 def delete_item(item_id):
-    conn = get_db()
+    user_id = request.args.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Missing user_id"}), 400
+
+    conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM items WHERE item_id=?", (item_id,))
+    cursor.execute("DELETE FROM items WHERE item_id=? AND user_id=?", (item_id, user_id))
     conn.commit()
-    conn.close()
-    return jsonify({"message": "Item deleted successfully"})
+    close_connection(conn)
+    return jsonify({"message": "Item deleted"})
 
-# ---------------- Transactions ROUTES ----------------
-# READ: Get all transactions
-@app.route("/transactions", methods=["GET"])
-def get_transactions():
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT t.transaction_id, t.item_id, t.type, t.quantity, t.date, i.item_name
-        FROM transactions t
-        LEFT JOIN items i ON t.item_id = i.item_id
-        ORDER BY t.date DESC
-    """)
-    transactions = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return jsonify(transactions)
+# ---------------- TRANSACTIONS ----------------
+@app.route("/transactions", methods=["GET", "POST"])
+def transactions():
+    if request.method == "GET":
+        user_id = request.args.get("user_id")
+        if not user_id:
+            return jsonify({"error": "Missing user_id"}), 400
 
-# CREATE: Add a transaction (stock in/out)
-@app.route("/transactions", methods=["POST"])
-def add_transaction():
-    data = request.get_json()
-    item_id = data.get("item_id")
-    trans_type = data.get("type")
-    quantity = data.get("quantity")
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT t.transaction_id, i.item_name, t.type, t.quantity, t.date
+            FROM transactions t
+            JOIN items i ON t.item_id = i.item_id
+            WHERE t.user_id=?
+            """,
+            (user_id,)
+        )
+        txns = [dict(row) for row in cursor.fetchall()]
+        close_connection(conn)
+        return jsonify(txns)
 
-    if trans_type not in ["IN", "OUT"] or quantity < 1:
-        return jsonify({"error": "Invalid input"}), 400
+    if request.method == "POST":
+        data = request.get_json()
+        user_id = data.get("user_id")
+        item_id = data.get("item_id")
+        ttype = data.get("type")
+        quantity = data.get("quantity")
 
-    conn = get_db()
-    cursor = conn.cursor()
+        if not all([user_id, item_id, ttype, quantity]):
+            return jsonify({"error": "Missing fields"}), 400
 
-    # Get current stock
-    cursor.execute("SELECT quantity FROM items WHERE item_id=?", (item_id,))
-    item = cursor.fetchone()
+        conn = get_connection()
+        cursor = conn.cursor()
+        try:
+            # Update item quantity
+            cursor.execute("SELECT quantity FROM items WHERE item_id=? AND user_id=?", (item_id, user_id))
+            item = cursor.fetchone()
+            if not item:
+                return jsonify({"error": "Item not found"}), 404
 
-    if not item:
-        conn.close()
-        return jsonify({"error": "Item not found"}), 404
+            new_qty = item["quantity"] + quantity if ttype == "IN" else item["quantity"] - quantity
+            if new_qty < 0:
+                return jsonify({"error": "Insufficient stock"}), 400
 
-    current_qty = item[0]
+            cursor.execute("UPDATE items SET quantity=? WHERE item_id=? AND user_id=?", (new_qty, item_id, user_id))
+            cursor.execute(
+                "INSERT INTO transactions (user_id, item_id, type, quantity) VALUES (?, ?, ?, ?)",
+                (user_id, item_id, ttype, quantity)
+            )
+            conn.commit()
+            return jsonify({"message": "Transaction recorded"}), 201
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+        finally:
+            close_connection(conn)
 
-    # Prevent negative stock
-    if trans_type == "OUT" and quantity > current_qty:
-        conn.close()
-        return jsonify({"error": "Not enough stock"}), 400
-
-    # Update stock
-    if trans_type == "IN":
-        new_qty = current_qty + quantity
-    else:
-        new_qty = current_qty - quantity
-
-    cursor.execute("UPDATE items SET quantity=? WHERE item_id=?", (new_qty, item_id))
-
-    # Save transaction
-    cursor.execute(
-        "INSERT INTO transactions (item_id, type, quantity) VALUES (?, ?, ?)",
-        (item_id, trans_type, quantity)
-    )
-
-    conn.commit()
-    conn.close()
-
-    return jsonify({"message": "Transaction recorded"}), 201
-
-# ---------------- Reports ROUTES ----------------
+# ---------------- REPORTS ----------------
 @app.route("/reports", methods=["GET"])
-def get_reports():
-    conn = get_db()
+def reports():
+    user_id = request.args.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Missing user_id"}), 400
+
+    conn = get_connection()
     cursor = conn.cursor()
 
-    # Total items count
-    cursor.execute("SELECT COUNT(*) FROM items")
-    total_items = cursor.fetchone()[0]
+    # Total items
+    cursor.execute("SELECT COUNT(*) AS total FROM items WHERE user_id=?", (user_id,))
+    total_items = cursor.fetchone()["total"]
 
     # Total stock value
-    cursor.execute("SELECT SUM(quantity * unit_price) FROM items")
-    total_value = cursor.fetchone()[0] or 0
-
-    # Low stock items (less than 5)
-    cursor.execute("SELECT item_name, quantity FROM items WHERE quantity < 5")
-    low_stock = cursor.fetchall()
+    cursor.execute("SELECT SUM(quantity * unit_price) AS total_value FROM items WHERE user_id=?", (user_id,))
+    total_value = cursor.fetchone()["total_value"] or 0
 
     # Total transactions
-    cursor.execute("SELECT COUNT(*) FROM transactions")
-    total_transactions = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) AS total_txn FROM transactions WHERE user_id=?", (user_id,))
+    total_transactions = cursor.fetchone()["total_txn"]
 
-    conn.close()
+    # Low stock
+    cursor.execute("SELECT item_name, quantity FROM items WHERE user_id=? AND quantity < 5", (user_id,))
+    low_stock = [dict(row) for row in cursor.fetchall()]
+
+    close_connection(conn)
 
     return jsonify({
         "total_items": total_items,
         "total_value": total_value,
-        "low_stock": [dict(row) for row in low_stock],
-        "total_transactions": total_transactions
+        "total_transactions": total_transactions,
+        "low_stock": low_stock
     })
 
-# ---------------- Categories ROUTES ----------------
-# READ: Get all categories
-@app.route("/categories", methods=["GET"])
-def get_categories():
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM categories ORDER BY category_name")
-    categories = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return jsonify(categories)
-
-# CREATE: Add new category
-@app.route("/categories", methods=["POST"])
-def add_category():
-    data = request.get_json()
-    name = data.get("category_name")
-    if not name:
-        return jsonify({"error": "Category name required"}), 400
-
-    conn = get_db()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("INSERT INTO categories (category_name) VALUES (?)", (name,))
-        conn.commit()
-    except:
-        conn.close()
-        return jsonify({"error": "Category already exists"}), 400
-
-    conn.close()
-    return jsonify({"message": "Category added"}), 201
-
-# ---------------- Run App ----------------
 if __name__ == "__main__":
     app.run(debug=True)

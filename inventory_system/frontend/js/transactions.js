@@ -5,9 +5,13 @@ const itemSelect = document.getElementById("itemSelect");
 const form = document.getElementById("transactionForm");
 const table = document.getElementById("transactionTable");
 
+// Get logged-in user_id
+const user_id = sessionStorage.getItem("user_id");
+if (!user_id) window.location.href = "login.html";
+
 // Load items into dropdown
 function loadItems() {
-  fetch(API_ITEMS)
+  fetch(`${API_ITEMS}?user_id=${user_id}`)
     .then(res => res.json())
     .then(items => {
       itemSelect.innerHTML = "";
@@ -22,7 +26,7 @@ function loadItems() {
 
 // Load transactions
 function loadTransactions() {
-  fetch(API_TRANSACTIONS)
+  fetch(`${API_TRANSACTIONS}?user_id=${user_id}`)
     .then(res => res.json())
     .then(data => {
       table.innerHTML = "";
@@ -42,17 +46,14 @@ function loadTransactions() {
 // Submit transaction
 form.addEventListener("submit", e => {
   e.preventDefault();
-
   const item_id = itemSelect.value;
   const type = document.getElementById("type").value;
   const quantity = parseInt(document.getElementById("quantity").value);
 
   fetch(API_TRANSACTIONS, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ item_id, type, quantity })
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id, item_id, type, quantity })
   })
   .then(res => res.json())
   .then(data => {
@@ -63,7 +64,6 @@ form.addEventListener("submit", e => {
   });
 });
 
-// Initial load
 document.addEventListener("DOMContentLoaded", () => {
   loadItems();
   loadTransactions();
