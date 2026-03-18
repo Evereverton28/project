@@ -123,6 +123,28 @@ def delete_item(item_id):
     close_connection(conn)
     return jsonify({"message": "Item deleted"})
 
+@app.route("/items/<int:item_id>", methods=["PUT"])
+def update_item(item_id):
+    data = request.get_json()
+    user_id = data.get("user_id")
+    name = data.get("item_name")
+    category = data.get("category")
+    quantity = data.get("quantity")
+    unit_price = data.get("unit_price")
+
+    if not all([user_id, name, category, quantity, unit_price]):
+        return jsonify({"error": "Missing fields"}), 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE items SET item_name=?, category=?, quantity=?, unit_price=? WHERE item_id=? AND user_id=?",
+        (name, category, quantity, unit_price, item_id, user_id)
+    )
+    conn.commit()
+    close_connection(conn)
+    return jsonify({"message": "Item updated successfully"})
+
 # ---------------- TRANSACTIONS ----------------
 @app.route("/transactions", methods=["GET", "POST"])
 def transactions():

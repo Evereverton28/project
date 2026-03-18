@@ -5,53 +5,92 @@
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
+
 <body>
 
-<nav>
-  <a href="index.html">Dashboard</a>
-  <a href="items.html">Items</a>
-  <a href="transactions.html">Transactions</a>
-  <a href="reports.html">Reports</a>
-  <span id="userInfo" style="margin-left:auto; margin-right:10px;"></span>
-  <button id="logoutBtn" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i></button>>
-</nav>
-<script src="js/auth.js"></script>
+<div class="layout">
 
-<div class="container">
-  <h2>Inventory Reports</h2>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <h2 class="logo">Inventory</h2>
 
-  <div class="cards">
-    <div class="card">
-      <h3>Total Items</h3>
-      <p id="totalItems">0</p>
-    </div>
-    <div class="card">
-      <h3>Total Stock Value</h3>
-      <p id="totalValue">0</p>
-    </div>
-    <div class="card">
-      <h3>Total Transactions</h3>
-      <p id="totalTransactions">0</p>
-    </div>
-  </div>
+    <a href="index.html">
+      <i class="fa-solid fa-chart-line"></i> <span>Dashboard</span>
+    </a>
 
-  <h3>Low Stock Items (Less than 5)</h3>
-  <table border="1">
-    <thead>
-      <tr>
-        <th>Item</th>
-        <th>Quantity</th>
-      </tr>
-    </thead>
-    <tbody id="lowStockTable"></tbody>
-  </table>
+    <a href="items.html">
+      <i class="fa-solid fa-box"></i> <span>Items</span>
+    </a>
+
+    <a href="transactions.html">
+      <i class="fa-solid fa-right-left"></i> <span>Transactions</span>
+    </a>
+
+    <a href="reports.html">
+      <i class="fa-solid fa-chart-pie"></i> <span>Reports</span>
+    </a>
+
+    <div class="sidebar-footer">
+      <span id="userInfo"></span>
+      <button id="logoutBtn" class="logout-btn">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <div class="container" style="width: 100%; text-align: left;">
+      <h2>Inventory Reports</h2>
+
+      <!-- CARDS -->
+      <div class="cards">
+        <div class="card">
+          <h3>Total Items</h3>
+          <p id="totalItems">0</p>
+        </div>
+
+        <div class="card">
+          <h3>Total Stock Value</h3>
+          <p id="totalValue">0</p>
+        </div>
+
+        <div class="card">
+          <h3>Total Transactions</h3>
+          <p id="totalTransactions">0</p>
+        </div>
+      </div>
+
+      <!-- LOW STOCK -->
+      <h3>Low Stock Items (Less than 5)</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Quantity</th>
+          </tr>
+        </thead>
+
+        <tbody id="lowStockTable"></tbody>
+      </table>
+    </div>
+
+  </main>
+
 </div>
 
+<!-- JS -->
+<script src="js/auth.js"></script>
 <script src="js/reports.js"></script>
+
 <script>
-  const username = sessionStorage.getItem("username");
-  const userInfo = document.getElementById("userInfo");
-  if(username) userInfo.textContent = `Logged in as: ${username}`;
+const username = sessionStorage.getItem("username");
+if (username) {
+  document.getElementById("userInfo").textContent = `Logged in as: ${username}`;
+}
 </script>
+
 </body>
 </html>

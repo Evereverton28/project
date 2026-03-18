@@ -1,6 +1,13 @@
 const API_LOGIN = "http://127.0.0.1:5000/login";
 const API_SIGNUP = "http://127.0.0.1:5000/signup";
 
+// ---------------- LOGIN CHECK (for all protected pages) ----------------
+const userId = sessionStorage.getItem("user_id");
+if (!userId && !window.location.href.includes("login.html") && !window.location.href.includes("signup.html")) {
+  // redirect to login if not logged in and not on login/signup page
+  window.location.href = "login.html";
+}
+
 // ---------------- Login ----------------
 const loginForm = document.getElementById("loginForm");
 if (loginForm) {
@@ -68,4 +75,14 @@ if (logoutBtn) {
     sessionStorage.clear();
     window.location.href = "login.html";
   });
+}
+
+// ---------------- Display logged-in username ----------------
+const usernameSpan = document.getElementById("userInfo");
+if (usernameSpan) {
+  const storedUsername = sessionStorage.getItem("username");
+  if (storedUsername) {
+    usernameSpan.textContent = `Logged in as: ${storedUsername}`;
+    usernameSpan.style.color = "#ffffff"; // visible
+  }
 }

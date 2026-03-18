@@ -5,44 +5,66 @@
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
+
 <body>
 
-<nav>
-  <a href="index.html">Dashboard</a>
-  <a href="items.html">Items</a>
-  <a href="transactions.html">Transactions</a>
-  <a href="reports.html">Reports</a>
-  <span id="userInfo" style="margin-left:auto; margin-right:10px;"></span>
-  <button id="logoutBtn" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i></button>
-</nav>
-<script src="js/auth.js"></script>
+<div class="layout">
 
-<div class="container dashboard-container">
-  <h2>Welcome to Smart Inventory Management</h2>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <h2 class="logo">Inventory</h2>
 
-  <p class="subtitle">Our Smart Inventory Management System is designed to help you track and manage your inventory effortlessly. Whether you are managing stock for a small shop, a warehouse, or a school store, this system gives you a clear view of your items, categories, and transactions.</p>
+    <a href="index.html"><i class="fa-solid fa-chart-line"></i> <span>Dashboard</span></a>
+    <a href="items.html"><i class="fa-solid fa-box"></i> <span>Items</span></a>
+    <a href="transactions.html"><i class="fa-solid fa-right-left"></i> <span>Transactions</span></a>
+    <a href="reports.html"><i class="fa-solid fa-chart-pie"></i> <span>Reports</span></a>
 
-  <p class="subtitle">With an intuitive interface, you can:</p>
+    <div class="sidebar-footer">
+      <span id="userInfo"></span>
+      <button id="logoutBtn" class="logout-btn">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+    </div>
+  </aside>
 
-  <ul class="dashboard-features">
-    <li><strong>Add and manage items:</strong> Quickly add new inventory items, assign them to categories, and set quantity and pricing information.</li>
-    <li><strong>Dynamic categories:</strong> Choose existing categories from a dropdown or create new ones on the fly, keeping your system organized.</li>
-    <li><strong>Record transactions:</strong> Track stock in and stock out events to maintain real-time inventory levels.</li>
-    <li><strong>View reports:</strong> Generate simple reports to see item quantities, stock history, and overall inventory health.</li>
-    <li><strong>User-friendly navigation:</strong> The menu allows you to jump easily between the dashboard, items, transactions, and reports.</li>
-  </ul>
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
 
-  <p class="subtitle">This dashboard acts as your control center, providing guidance on how to use the system efficiently. Explore the Items section to add or delete items, the Transactions section to log stock movements, and the Reports section to visualize your inventory at a glance.</p>
+    <div class="container dashboard-container">
+      <h2>Welcome to Smart Inventory Management</h2>
 
-  <p class="subtitle">Our goal is to reduce manual work, prevent stock errors, and help you make better inventory decisions with minimal effort.</p>
+      <p class="subtitle">
+        Our Smart Inventory Management System is designed to help you track and manage your inventory effortlessly. Whether you are managing stock for a small shop, a warehouse, or a school store, this system gives you a clear view of your items, categories, and transactions.
+      </p>
+
+      <p class="subtitle">With an intuitive interface, you can:</p>
+
+      <ul class="dashboard-features">
+        <li><strong>Add and manage items:</strong> Quickly add new inventory items, assign them to categories, and set quantity and pricing information.</li>
+        <li><strong>Dynamic categories:</strong> Choose existing categories or create new ones on the fly.</li>
+        <li><strong>Record transactions:</strong> Track stock in and stock out events.</li>
+        <li><strong>View reports:</strong> See item quantities and inventory health.</li>
+        <li><strong>User-friendly navigation:</strong> Easily move between sections.</li>
+      </ul>
+
+      <p class="subtitle">
+        This dashboard acts as your control center. Explore the Items, Transactions, and Reports sections to manage your inventory effectively.
+      </p>
+    </div>
+
+  </main>
+
 </div>
 
-<script src="js/app.js"></script>
+<!-- JS -->
+<script src="js/auth.js"></script>
 <script>
-  // Show logged-in user
+  // Display logged-in username in the sidebar
   const username = sessionStorage.getItem("username");
   const userInfo = document.getElementById("userInfo");
-  if(username) userInfo.textContent = `Logged in as: ${username}`;
+  if (username) {
+    userInfo.textContent = `Logged in as: ${username}`;
+  }
 </script>
 
 </body>
