@@ -9,7 +9,7 @@ function loadReports() {
     .then(res => res.json())
     .then(data => {
       document.getElementById("totalItems").textContent = data.total_items;
-      document.getElementById("totalValue").textContent = data.total_value;
+      document.getElementById("totalValue").textContent = `KES ${Number(data.total_value).toLocaleString()}`;
       document.getElementById("totalTransactions").textContent = data.total_transactions;
 
       const table = document.getElementById("lowStockTable");

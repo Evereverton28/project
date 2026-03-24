@@ -21,7 +21,7 @@ function loadItems() {
           <td>${item.item_name}</td>
           <td>${item.category}</td>
           <td>${item.quantity}</td>
-          <td>${item.unit_price}</td>
+          <td>KES ${Number(item.unit_price).toLocaleString()}</td>
           <td>
             <button class="action-btn edit-btn" onclick="editItem(${item.item_id}, this)">
               <i class="fa-solid fa-pen"></i>
@@ -87,7 +87,7 @@ function editItem(id, btn) {
   const name = cells[0].innerText;
   const category = cells[1].innerText;
   const quantity = cells[2].innerText;
-  const price = cells[3].innerText;
+  const price = cells[3].innerText.replace("KES ", "").replace(/,/g, "");
 
   row.innerHTML = `
     <td><input value="${name}"></td>
