@@ -1,4 +1,3 @@
-# app.py
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sqlite3
@@ -33,7 +32,6 @@ def signup():
         )
         conn.commit()
         user_id = cursor.lastrowid
-        # ✅ Immediately log in the user
         return jsonify({"user_id": user_id, "username": username}), 201
     except sqlite3.IntegrityError:
         return jsonify({"error": "Username or email already exists"}), 409
