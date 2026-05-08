@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Dashboard</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Inventory</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-
 <body>
 
 <div class="layout">
@@ -13,12 +14,10 @@
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <h2 class="logo">Inventory</h2>
-
-    <a href="index.html"><i class="fa-solid fa-chart-line"></i> <span>Dashboard</span></a>
+    <a href="index.html" class="active"><i class="fa-solid fa-chart-line"></i> <span>Dashboard</span></a>
     <a href="items.html"><i class="fa-solid fa-box"></i> <span>Items</span></a>
     <a href="transactions.html"><i class="fa-solid fa-right-left"></i> <span>Transactions</span></a>
     <a href="reports.html"><i class="fa-solid fa-chart-pie"></i> <span>Reports</span></a>
-
     <div class="sidebar-footer">
       <span id="userInfo"></span>
       <button id="logoutBtn" class="logout-btn">
@@ -27,44 +26,155 @@
     </div>
   </aside>
 
-  <!-- MAIN CONTENT -->
+  <!-- MAIN -->
   <main class="main-content">
-
-    <div class="container dashboard-container">
-      <h2>Welcome to Smart Inventory Management</h2>
-
-      <p class="subtitle">
-        Our Smart Inventory Management System is designed to help you track and manage your inventory effortlessly. Whether you are managing stock for a small shop, a warehouse, or a school store, this system gives you a clear view of your items, categories, and transactions.
-      </p>
-
-      <p class="subtitle">With an intuitive interface, you can:</p>
-
-      <ul class="dashboard-features">
-        <li><strong>Add and manage items:</strong> Quickly add new inventory items, assign them to categories, and set quantity and pricing information.</li>
-        <li><strong>Dynamic categories:</strong> Choose existing categories or create new ones on the fly.</li>
-        <li><strong>Record transactions:</strong> Track stock in and stock out events.</li>
-        <li><strong>View reports:</strong> See item quantities and inventory health.</li>
-        <li><strong>User-friendly navigation:</strong> Easily move between sections.</li>
-      </ul>
-
-      <p class="subtitle">
-        This dashboard acts as your control center. Explore the Items, Transactions, and Reports sections to manage your inventory effectively.
-      </p>
+    <div class="page-header">
+      <h2>Dashboard</h2>
+      <p class="page-subtitle">Live overview of your inventory</p>
     </div>
 
+    <!-- STAT CARDS -->
+    <div class="stat-cards">
+      <div class="stat-card" id="card-items">
+        <div class="stat-icon"><i class="fa-solid fa-box"></i></div>
+        <div class="stat-body">
+          <div class="stat-label">Total Items</div>
+          <div class="stat-value" id="totalItems">
+            <span class="skeleton-line" style="width:60px"></span>
+          </div>
+          <div class="stat-sub">unique products</div>
+        </div>
+      </div>
+      <div class="stat-card" id="card-value">
+        <div class="stat-icon"><i class="fa-solid fa-coins"></i></div>
+        <div class="stat-body">
+          <div class="stat-label">Stock Value</div>
+          <div class="stat-value" id="totalValue">
+            <span class="skeleton-line" style="width:90px"></span>
+          </div>
+          <div class="stat-sub">total KES</div>
+        </div>
+      </div>
+      <div class="stat-card" id="card-txn">
+        <div class="stat-icon"><i class="fa-solid fa-right-left"></i></div>
+        <div class="stat-body">
+          <div class="stat-label">Transactions</div>
+          <div class="stat-value" id="totalTransactions">
+            <span class="skeleton-line" style="width:50px"></span>
+          </div>
+          <div class="stat-sub">all time</div>
+        </div>
+      </div>
+      <div class="stat-card danger" id="card-low">
+        <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="stat-body">
+          <div class="stat-label">Low Stock</div>
+          <div class="stat-value" id="lowStockCount">
+            <span class="skeleton-line" style="width:40px"></span>
+          </div>
+          <div class="stat-sub">items need attention</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANELS ROW -->
+    <div class="panels-row">
+
+      <!-- LOW STOCK ALERTS -->
+      <div class="panel">
+        <div class="panel-header">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <h3>Low Stock Alerts</h3>
+        </div>
+        <div id="lowStockList">
+          <div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>
+        </div>
+      </div>
+
+      <!-- RECENT TRANSACTIONS -->
+      <div class="panel">
+        <div class="panel-header">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <h3>Recent Transactions</h3>
+        </div>
+        <div id="recentTxns">
+          <div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>
+        </div>
+      </div>
+
+    </div>
   </main>
 
 </div>
 
-<!-- JS -->
 <script src="js/auth.js"></script>
 <script>
-  // Display logged-in username in the sidebar
-  const username = sessionStorage.getItem("username");
-  const userInfo = document.getElementById("userInfo");
-  if (username) {
-    userInfo.textContent = `Logged in as: ${username}`;
+  const API_BASE   = "http://127.0.0.1:5000";
+  const user_id    = sessionStorage.getItem("user_id");
+
+  /* ---- populate sidebar ---- */
+  const usernameEl = document.getElementById("userInfo");
+  const username   = sessionStorage.getItem("username");
+  if (username) usernameEl.textContent = `Logged in as: ${username}`;
+
+  /* ---- fetch & render dashboard ---- */
+  async function loadDashboard() {
+    try {
+      const [reportsRes, txnRes] = await Promise.all([
+        fetch(`${API_BASE}/reports?user_id=${user_id}`),
+        fetch(`${API_BASE}/transactions?user_id=${user_id}`)
+      ]);
+      const reports = await reportsRes.json();
+      const txns    = await txnRes.json();
+
+      /* stat cards */
+      document.getElementById("totalItems").textContent        = reports.total_items;
+      document.getElementById("totalValue").textContent        = `KES ${Number(reports.total_value).toLocaleString()}`;
+      document.getElementById("totalTransactions").textContent = reports.total_transactions;
+      document.getElementById("lowStockCount").textContent     = reports.low_stock.length;
+
+      /* low stock list */
+      const lowEl = document.getElementById("lowStockList");
+      if (reports.low_stock.length === 0) {
+        lowEl.innerHTML = `<div class="empty-state"><i class="fa-solid fa-circle-check"></i><p>All items are well stocked</p></div>`;
+      } else {
+        lowEl.innerHTML = reports.low_stock.map(item => `
+          <div class="alert-row">
+            <span class="alert-item-name">${item.item_name}</span>
+            <span class="badge danger">${item.quantity} left</span>
+          </div>
+        `).join("");
+      }
+
+      /* recent transactions — show last 5 */
+      const recentEl = document.getElementById("recentTxns");
+      const recent   = [...txns].reverse().slice(0, 5);
+      if (recent.length === 0) {
+        recentEl.innerHTML = `<div class="empty-state"><i class="fa-solid fa-inbox"></i><p>No transactions yet</p></div>`;
+      } else {
+        recentEl.innerHTML = recent.map(t => `
+          <div class="txn-row">
+            <span class="badge ${t.type === 'IN' ? 'success' : 'danger'}">${t.type}</span>
+            <div class="txn-info">
+              <span class="txn-name">${t.item_name}</span>
+              <span class="txn-date">${new Date(t.date).toLocaleString()}</span>
+            </div>
+            <span class="txn-qty ${t.type === 'IN' ? 'qty-in' : 'qty-out'}">
+              ${t.type === 'IN' ? '+' : '-'}${t.quantity}
+            </span>
+          </div>
+        `).join("");
+      }
+
+    } catch (err) {
+      console.error("Dashboard load error:", err);
+      document.querySelectorAll(".stat-value").forEach(el => el.textContent = "—");
+      document.getElementById("lowStockList").innerHTML  = `<div class="empty-state error">Could not load data</div>`;
+      document.getElementById("recentTxns").innerHTML   = `<div class="empty-state error">Could not load data</div>`;
+    }
   }
+
+  document.addEventListener("DOMContentLoaded", loadDashboard);
 </script>
 
 </body>

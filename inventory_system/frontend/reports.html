@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Reports</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports — Inventory</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 </head>
-
 <body>
 
 <div class="layout">
@@ -13,23 +15,10 @@
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <h2 class="logo">Inventory</h2>
-
-    <a href="index.html">
-      <i class="fa-solid fa-chart-line"></i> <span>Dashboard</span>
-    </a>
-
-    <a href="items.html">
-      <i class="fa-solid fa-box"></i> <span>Items</span>
-    </a>
-
-    <a href="transactions.html">
-      <i class="fa-solid fa-right-left"></i> <span>Transactions</span>
-    </a>
-
-    <a href="reports.html">
-      <i class="fa-solid fa-chart-pie"></i> <span>Reports</span>
-    </a>
-
+    <a href="index.html"><i class="fa-solid fa-chart-line"></i> <span>Dashboard</span></a>
+    <a href="items.html"><i class="fa-solid fa-box"></i> <span>Items</span></a>
+    <a href="transactions.html"><i class="fa-solid fa-right-left"></i> <span>Transactions</span></a>
+    <a href="reports.html" class="active"><i class="fa-solid fa-chart-pie"></i> <span>Reports</span></a>
     <div class="sidebar-footer">
       <span id="userInfo"></span>
       <button id="logoutBtn" class="logout-btn">
@@ -38,58 +27,275 @@
     </div>
   </aside>
 
-  <!-- MAIN CONTENT -->
+  <!-- MAIN -->
   <main class="main-content">
+    <div class="page-header">
+      <h2>Reports</h2>
+      <p class="page-subtitle">Inventory analytics and health overview</p>
+    </div>
 
-    <div class="container" style="width: 100%; text-align: left;">
-      <h2>Inventory Reports</h2>
-
-      <!-- CARDS -->
-      <div class="cards">
-        <div class="card">
-          <h3>Total Items</h3>
-          <p id="totalItems">0</p>
+    <!-- STAT CARDS -->
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-box"></i></div>
+        <div class="stat-body">
+          <div class="stat-label">Total Items</div>
+          <div class="stat-value" id="totalItems">—</div>
+          <div class="stat-sub">unique products</div>
         </div>
-
-        <div class="card">
-          <h3>Total Stock Value</h3>
-          <p id="totalValue">0</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-coins"></i></div>
+        <div class="stat-body">
+          <div class="stat-label">Stock Value</div>
+          <div class="stat-value" id="totalValue">—</div>
+          <div class="stat-sub">total KES</div>
         </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-right-left"></i></div>
+        <div class="stat-body">
+          <div class="stat-label">Transactions</div>
+          <div class="stat-value" id="totalTransactions">—</div>
+          <div class="stat-sub">all time</div>
+        </div>
+      </div>
+      <div class="stat-card danger">
+        <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="stat-body">
+          <div class="stat-label">Low Stock</div>
+          <div class="stat-value" id="lowCount">—</div>
+          <div class="stat-sub">need restocking</div>
+        </div>
+      </div>
+    </div>
 
-        <div class="card">
-          <h3>Total Transactions</h3>
-          <p id="totalTransactions">0</p>
+    <!-- CHARTS ROW -->
+    <div class="panels-row">
+
+      <!-- STOCK BY CATEGORY (BAR) -->
+      <div class="panel">
+        <div class="panel-header">
+          <i class="fa-solid fa-chart-bar"></i>
+          <h3>Stock by Category</h3>
+        </div>
+        <div style="position:relative;height:260px;">
+          <canvas id="categoryChart" role="img" aria-label="Bar chart showing stock quantity per category">Loading chart...</canvas>
         </div>
       </div>
 
-      <!-- LOW STOCK -->
-      <h3>Low Stock Items (Less than 5)</h3>
+      <!-- IN vs OUT (DOUGHNUT) -->
+      <div class="panel">
+        <div class="panel-header">
+          <i class="fa-solid fa-chart-pie"></i>
+          <h3>Transaction Flow</h3>
+        </div>
+        <div style="position:relative;height:260px;display:flex;align-items:center;justify-content:center;">
+          <canvas id="txnChart" role="img" aria-label="Doughnut chart showing stock in vs stock out transactions">Loading chart...</canvas>
+        </div>
+        <div id="txnLegend" class="chart-legend"></div>
+      </div>
 
-      <table>
+    </div>
+
+    <!-- TRANSACTIONS OVER TIME (LINE) -->
+    <div class="panel" style="margin-top:1rem;">
+      <div class="panel-header">
+        <i class="fa-solid fa-chart-line"></i>
+        <h3>Transactions Over Time</h3>
+      </div>
+      <div style="position:relative;height:260px;">
+        <canvas id="timeChart" role="img" aria-label="Line chart showing transactions over the past 30 days">Loading chart...</canvas>
+      </div>
+    </div>
+
+    <!-- LOW STOCK TABLE -->
+    <div class="panel" style="margin-top:1rem;">
+      <div class="panel-header">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <h3>Low Stock Items</h3>
+      </div>
+      <table class="data-table" id="lowStockTable">
         <thead>
           <tr>
-            <th>Item</th>
-            <th>Quantity</th>
+            <th>Item Name</th>
+            <th>Quantity Remaining</th>
+            <th>Status</th>
           </tr>
         </thead>
-
-        <tbody id="lowStockTable"></tbody>
+        <tbody id="lowStockBody">
+          <tr><td colspan="3" class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</td></tr>
+        </tbody>
       </table>
     </div>
 
   </main>
-
 </div>
 
-<!-- JS -->
 <script src="js/auth.js"></script>
-<script src="js/reports.js"></script>
-
 <script>
+const API_BASE = "http://127.0.0.1:5000";
+const user_id  = sessionStorage.getItem("user_id");
+
 const username = sessionStorage.getItem("username");
-if (username) {
-  document.getElementById("userInfo").textContent = `Logged in as: ${username}`;
+if (username) document.getElementById("userInfo").textContent = `Logged in as: ${username}`;
+
+/* chart color palette */
+const PALETTE = ["#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899","#06b6d4","#84cc16"];
+
+async function loadReports() {
+  try {
+    const [repRes, itemsRes, txnRes] = await Promise.all([
+      fetch(`${API_BASE}/reports?user_id=${user_id}`),
+      fetch(`${API_BASE}/items?user_id=${user_id}`),
+      fetch(`${API_BASE}/transactions?user_id=${user_id}`)
+    ]);
+    const rep   = await repRes.json();
+    const items = await itemsRes.json();
+    const txns  = await txnRes.json();
+
+    /* --- stat cards --- */
+    document.getElementById("totalItems").textContent        = rep.total_items;
+    document.getElementById("totalValue").textContent        = `KES ${Number(rep.total_value).toLocaleString()}`;
+    document.getElementById("totalTransactions").textContent = rep.total_transactions;
+    document.getElementById("lowCount").textContent          = rep.low_stock.length;
+
+    /* --- chart 1: stock quantity by category --- */
+    const catMap = {};
+    items.forEach(item => {
+      const cat = item.category || "Uncategorized";
+      catMap[cat] = (catMap[cat] || 0) + item.quantity;
+    });
+    const catLabels = Object.keys(catMap);
+    const catData   = Object.values(catMap);
+    new Chart(document.getElementById("categoryChart"), {
+      type: "bar",
+      data: {
+        labels: catLabels,
+        datasets: [{
+          label: "Stock quantity",
+          data: catData,
+          backgroundColor: PALETTE.slice(0, catLabels.length),
+          borderRadius: 4,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 } },
+          x: { ticks: { autoSkip: false } }
+        }
+      }
+    });
+
+    /* --- chart 2: IN vs OUT doughnut --- */
+    const inCount  = txns.filter(t => t.type === "IN").length;
+    const outCount = txns.filter(t => t.type === "OUT").length;
+    new Chart(document.getElementById("txnChart"), {
+      type: "doughnut",
+      data: {
+        labels: ["Stock In", "Stock Out"],
+        datasets: [{
+          data: [inCount, outCount],
+          backgroundColor: ["#10b981", "#ef4444"],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "65%",
+        plugins: { legend: { display: false } }
+      }
+    });
+    document.getElementById("txnLegend").innerHTML = `
+      <div class="legend-item"><span class="legend-dot" style="background:#10b981"></span>Stock In — ${inCount}</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#ef4444"></span>Stock Out — ${outCount}</div>
+    `;
+
+    /* --- chart 3: transactions over last 30 days --- */
+    const now    = new Date();
+    const days   = 30;
+    const labels = [];
+    const inCounts  = new Array(days).fill(0);
+    const outCounts = new Array(days).fill(0);
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      labels.push(d.toLocaleDateString("en-KE", { month: "short", day: "numeric" }));
+    }
+
+    txns.forEach(t => {
+      const txDate   = new Date(t.date);
+      const diffDays = Math.floor((now - txDate) / 86400000);
+      if (diffDays < days) {
+        const idx = days - 1 - diffDays;
+        if (t.type === "IN")  inCounts[idx]++;
+        else                  outCounts[idx]++;
+      }
+    });
+
+    new Chart(document.getElementById("timeChart"), {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Stock In",
+            data: inCounts,
+            borderColor: "#10b981",
+            backgroundColor: "rgba(16,185,129,0.1)",
+            fill: true,
+            tension: 0.4,
+            pointRadius: 3
+          },
+          {
+            label: "Stock Out",
+            data: outCounts,
+            borderColor: "#ef4444",
+            backgroundColor: "rgba(239,68,68,0.08)",
+            fill: true,
+            tension: 0.4,
+            pointRadius: 3,
+            borderDash: [5, 3]
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom" } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 } },
+          x: { ticks: { autoSkip: true, maxTicksLimit: 8, maxRotation: 0 } }
+        }
+      }
+    });
+
+    /* --- low stock table --- */
+    const tbody = document.getElementById("lowStockBody");
+    if (rep.low_stock.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" class="empty-state"><i class="fa-solid fa-circle-check"></i> All items are well stocked</td></tr>`;
+    } else {
+      tbody.innerHTML = rep.low_stock.map(item => `
+        <tr>
+          <td>${item.item_name}</td>
+          <td>${item.quantity}</td>
+          <td><span class="badge danger">${item.quantity === 0 ? "Out of stock" : "Low stock"}</span></td>
+        </tr>
+      `).join("");
+    }
+
+  } catch (err) {
+    console.error("Reports error:", err);
+  }
 }
+
+document.addEventListener("DOMContentLoaded", loadReports);
 </script>
 
 </body>

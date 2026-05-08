@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Transactions</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transactions — Inventory</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
@@ -15,65 +17,68 @@
 
     <a href="index.html"><i class="fa-solid fa-chart-line"></i> <span>Dashboard</span></a>
     <a href="items.html"><i class="fa-solid fa-box"></i> <span>Items</span></a>
-    <a href="transactions.html"><i class="fa-solid fa-right-left"></i> <span>Transactions</span></a>
+    <a href="transactions.html" class="active"><i class="fa-solid fa-right-left"></i> <span>Transactions</span></a>
     <a href="reports.html"><i class="fa-solid fa-chart-pie"></i> <span>Reports</span></a>
 
     <div class="sidebar-footer">
       <span id="userInfo"></span>
-      <button id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i></button>
+      <button id="logoutBtn" class="logout-btn">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
     </div>
   </aside>
 
   <main class="main-content">
 
-    <div class="container" style="width: 100%; text-align: left;">
+    <div class="page-header">
       <h2>Record Transaction</h2>
-
-      <form id="transactionForm">
-        <select id="itemSelect" required></select>
-
-        <select id="type" required>
-          <option value="IN">⬆ Stock In</option>
-          <option value="OUT">⬇ Stock Out</option>
-        </select>
-
-        <input type="number" id="quantity" placeholder="Quantity" required>
-
-        <button type="submit">
-          <i class="fa-solid fa-plus"></i> Submit
-        </button>
-      </form>
-
-      <h3>Transaction History</h3>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Type</th>
-            <th>Quantity</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-
-        <tbody id="transactionTable"></tbody>
-      </table>
+      <p class="page-subtitle">Log stock movements in or out</p>
     </div>
+
+    <form id="transactionForm">
+      <select id="itemSelect" required></select>
+
+      <select id="type" required>
+        <option value="IN">⬆ Stock In</option>
+        <option value="OUT">⬇ Stock Out</option>
+      </select>
+
+      <input type="number" id="quantity" placeholder="Quantity" min="1" required>
+
+      <button type="submit">
+        <i class="fa-solid fa-plus"></i> Submit
+      </button>
+    </form>
+
+    <h3 style="margin-top:2rem;">Transaction History</h3>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Type</th>
+          <th>Quantity</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="transactionTable"></tbody>
+    </table>
 
   </main>
 
 </div>
 
+<!-- JS — toast MUST come before transactions.js so showToast is defined -->
+<script src="js/toast.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/transactions.js"></script>
 
 <script>
-const username = sessionStorage.getItem("username");
-if (username) {
-  document.getElementById("userInfo").textContent = `Logged in as: ${username}`;
-}
+  const username = sessionStorage.getItem("username");
+  if (username) {
+    document.getElementById("userInfo").textContent = `Logged in as: ${username}`;
+  }
 </script>
-
 
 </body>
 </html>
