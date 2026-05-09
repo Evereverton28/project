@@ -1,9 +1,26 @@
+// FIX #1: toast.js MUST be loaded before this file on every page that uses auth.js.
+//          login.html and signup.html now include toast.js first.
+
 const API_LOGIN  = "http://127.0.0.1:5000/login";
 const API_SIGNUP = "http://127.0.0.1:5000/signup";
+const API_LOGOUT = "http://127.0.0.1:5000/logout";
+
+/* ---- FIX #6: helper to build auth headers for every fetch call ---- */
+function authHeaders(extra = {}) {
+  const token = sessionStorage.getItem("token");
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    ...extra,
+  };
+}
 
 /* ---- redirect if not logged in ---- */
 const userId = sessionStorage.getItem("user_id");
-const onPublicPage = window.location.href.includes("login.html") || window.location.href.includes("signup.html");
+const onPublicPage =
+  window.location.href.includes("login.html") ||
+  window.location.href.includes("signup.html");
+
 if (!userId && !onPublicPage) {
   window.location.href = "login.html";
 }
@@ -20,12 +37,13 @@ if (loginForm) {
       const res  = await fetch(API_LOGIN, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username, password }),
       });
       const data = await res.json();
       if (data.user_id) {
         sessionStorage.setItem("user_id",  data.user_id);
         sessionStorage.setItem("username", data.username);
+        sessionStorage.setItem("token",    data.token);   // FIX #6
         window.location.href = "index.html";
       } else {
         showToast(data.error || "Login failed", "danger");
@@ -55,12 +73,13 @@ if (signupForm) {
       const res  = await fetch(API_SIGNUP, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password })
+        body: JSON.stringify({ username, email, password }),
       });
       const data = await res.json();
       if (data.user_id) {
         sessionStorage.setItem("user_id",  data.user_id);
         sessionStorage.setItem("username", data.username);
+        sessionStorage.setItem("token",    data.token);   // FIX #6
         window.location.href = "index.html";
       } else {
         showToast(data.error || "Signup failed", "danger");
@@ -74,7 +93,15 @@ if (signupForm) {
 /* ---- Logout ---- */
 const logoutBtn = document.getElementById("logoutBtn");
 if (logoutBtn) {
-  logoutBtn.addEventListener("click", () => {
+  logoutBtn.addEventListener("click", async () => {
+    try {
+      // Tell the server to invalidate the token
+      await fetch(API_LOGOUT, {
+        method: "POST",
+        headers: authHeaders(),
+      });
+    } catch { /* server unreachable — clear locally anyway */ }
+
     sessionStorage.clear();
     window.location.href = "login.html";
   });

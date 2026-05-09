@@ -37,7 +37,6 @@ a { text-decoration: none; }
 
 /* ============================
    AUTH PAGES
-   .auth-wrapper > .auth-box
 ============================ */
 .auth-wrapper {
   min-height: 100vh;
@@ -209,7 +208,7 @@ a { text-decoration: none; }
 .main-content { flex: 1; padding: 2rem; overflow: auto; }
 
 /* ============================
-   CONTAINER (items & transactions pages)
+   CONTAINER
 ============================ */
 .container {
   background: var(--surface);
@@ -233,7 +232,7 @@ a { text-decoration: none; }
 }
 
 /* ============================
-   INLINE FORMS  (#itemForm, #transactionForm)
+   INLINE FORMS
 ============================ */
 #itemForm,
 #transactionForm {
@@ -290,7 +289,6 @@ a { text-decoration: none; }
 #itemForm button[type="submit"]:hover,
 #transactionForm button[type="submit"]:hover { background: var(--primary-dark); }
 
-/* search bar */
 #searchInput {
   display: block;
   width: 100%;
@@ -335,7 +333,6 @@ table td {
 table tr:last-child td { border-bottom: none; }
 table tbody tr:hover td { background: var(--surface-alt); }
 
-/* inline edit inputs inside td */
 table td input {
   width: 100%;
   padding: 6px 8px;
@@ -347,7 +344,6 @@ table td input {
 }
 table td input:focus { border-color: var(--primary); }
 
-/* action buttons */
 .action-btn {
   width: 30px;
   height: 30px;
@@ -383,14 +379,14 @@ table td input:focus { border-color: var(--primary); }
 .badge.warning { background: var(--warning-light); color: var(--warning); }
 
 /* ============================
-   DASHBOARD — page header
+   PAGE HEADER
 ============================ */
 .page-header    { margin-bottom: 1.5rem; }
 .page-header h2 { font-size: 20px; font-weight: 700; }
 .page-subtitle  { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
 
 /* ============================
-   DASHBOARD — stat cards
+   STAT CARDS
 ============================ */
 .stat-cards {
   display: grid;
@@ -428,7 +424,6 @@ table td input:focus { border-color: var(--primary); }
 .stat-value { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.1; margin-bottom: 2px; min-height: 28px; }
 .stat-sub   { font-size: 11px; color: var(--text-muted); }
 
-/* skeleton shimmer */
 .skeleton-line {
   display: inline-block;
   height: 22px;
@@ -440,7 +435,7 @@ table td input:focus { border-color: var(--primary); }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
 /* ============================
-   DASHBOARD / REPORTS — panels
+   PANELS
 ============================ */
 .panels-row {
   display: grid;
@@ -467,7 +462,7 @@ table td input:focus { border-color: var(--primary); }
 .panel-header h3 { font-size: 14px; font-weight: 600; color: var(--text); margin: 0; }
 
 /* ============================
-   DASHBOARD — alert rows (low stock)
+   ALERT ROWS (low stock)
 ============================ */
 .alert-row {
   display: flex;
@@ -481,7 +476,7 @@ table td input:focus { border-color: var(--primary); }
 .alert-item-name { color: var(--text); }
 
 /* ============================
-   DASHBOARD — transaction rows
+   TRANSACTION ROWS
 ============================ */
 .txn-row {
   display: flex;
@@ -520,7 +515,7 @@ table td input:focus { border-color: var(--primary); }
 }
 
 /* ============================
-   REPORTS — chart legend
+   CHART LEGEND
 ============================ */
 .chart-legend {
   display: flex;
@@ -534,7 +529,7 @@ table td input:focus { border-color: var(--primary); }
 .legend-dot  { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
 
 /* ============================
-   TOAST NOTIFICATION
+   TOAST
 ============================ */
 #toast {
   position: fixed;
@@ -574,18 +569,16 @@ table td input:focus { border-color: var(--primary); }
   #transactionForm select { flex: 1 1 100%; }
 }
 
-/* ================================================================
-   REPORTS — append these rules to the bottom of styles.css
-================================================================ */
-
-/* Filter bar */
+/* ============================
+   REPORTS — filter bar
+============================ */
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 16px;
-  background: var(--card-bg, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 14px 18px;
   margin-bottom: 1.5rem;
@@ -599,28 +592,27 @@ table td input:focus { border-color: var(--primary); }
 
 .filter-group label {
   font-size: 12px;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   font-weight: 500;
 }
 
 .filter-group input[type="date"] {
   padding: 6px 10px;
-  border: 1px solid var(--border-color, #e5e7eb);
+  border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 13px;
-  background: var(--input-bg, #f9fafb);
-  color: var(--text-color, #111827);
+  background: var(--surface-alt);
+  color: var(--text);
 }
 
 .filter-group input[type="range"] {
   width: 140px;
-  accent-color: var(--primary, #3b82f6);
+  accent-color: var(--primary);
 }
 
-/* Quick range toggle buttons */
 .btn-group {
   display: flex;
-  border: 1px solid var(--border-color, #e5e7eb);
+  border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -630,10 +622,10 @@ table td input:focus { border-color: var(--primary); }
   font-size: 12px;
   font-weight: 500;
   border: none;
-  background: var(--input-bg, #f9fafb);
-  color: var(--text-muted, #6b7280);
+  background: var(--surface-alt);
+  color: var(--text-muted);
   cursor: pointer;
-  border-right: 1px solid var(--border-color, #e5e7eb);
+  border-right: 1px solid var(--border);
   transition: background 0.15s, color 0.15s;
 }
 
@@ -641,11 +633,10 @@ table td input:focus { border-color: var(--primary); }
 
 .range-btn.active,
 .range-btn:hover {
-  background: var(--primary, #3b82f6);
+  background: var(--primary);
   color: #fff;
 }
 
-/* Action buttons */
 .filter-actions {
   flex-direction: row;
   gap: 8px;
@@ -667,23 +658,22 @@ table td input:focus { border-color: var(--primary); }
 }
 
 .btn-primary {
-  background: var(--primary, #3b82f6);
+  background: var(--primary);
   color: #fff;
 }
 
 .btn-secondary {
-  background: var(--input-bg, #f1f5f9);
-  color: var(--text-color, #111827);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--surface-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
 .btn-primary:hover,
 .btn-secondary:hover { opacity: 0.85; }
 
-/* Rank badge in top items table */
 .rank-badge {
   display: inline-block;
-  background: var(--primary, #3b82f6);
+  background: var(--primary);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -692,11 +682,10 @@ table td input:focus { border-color: var(--primary); }
   margin-right: 4px;
 }
 
-/* Turnover bar */
 .turnover-bar-wrap {
   flex: 1;
   height: 6px;
-  background: var(--border-color, #e5e7eb);
+  background: var(--border);
   border-radius: 99px;
   overflow: hidden;
   min-width: 60px;
@@ -705,7 +694,7 @@ table td input:focus { border-color: var(--primary); }
 .turnover-bar {
   height: 100%;
   border-radius: 99px;
-  background: var(--text-muted, #9ca3af);
+  background: var(--text-muted);
   transition: width 0.4s ease;
 }
 

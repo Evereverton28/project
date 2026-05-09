@@ -37,7 +37,6 @@
 
     <!-- FILTER BAR -->
     <div class="filter-bar">
-      <!-- Date range -->
       <div class="filter-group">
         <label>From</label>
         <input type="date" id="dateFrom">
@@ -47,7 +46,6 @@
         <input type="date" id="dateTo">
       </div>
 
-      <!-- Time window quick picks -->
       <div class="filter-group">
         <label>Quick range</label>
         <div class="btn-group">
@@ -58,13 +56,11 @@
         </div>
       </div>
 
-      <!-- Low stock threshold -->
       <div class="filter-group">
         <label>Low stock threshold: <strong id="thresholdVal">5</strong></label>
         <input type="range" id="lowThreshold" min="1" max="50" value="5" step="1">
       </div>
 
-      <!-- Actions -->
       <div class="filter-group filter-actions">
         <button id="applyBtn" class="btn-primary">
           <i class="fa-solid fa-rotate"></i> Refresh
@@ -111,7 +107,7 @@
       </div>
     </div>
 
-    <!-- ROW 1: Stock by category (bar) + Transaction flow (doughnut) -->
+    <!-- ROW 1 -->
     <div class="panels-row">
       <div class="panel">
         <div class="panel-header">
@@ -135,7 +131,7 @@
       </div>
     </div>
 
-    <!-- ROW 2: IN vs OUT doughnut + Transactions over time (line) -->
+    <!-- ROW 2 -->
     <div class="panels-row" style="margin-top:1rem;">
       <div class="panel">
         <div class="panel-header">
@@ -159,7 +155,7 @@
       </div>
     </div>
 
-    <!-- ROW 3: Top 5 most-moved + Turnover rate -->
+    <!-- ROW 3 -->
     <div class="panels-row" style="margin-top:1rem;">
       <div class="panel">
         <div class="panel-header">

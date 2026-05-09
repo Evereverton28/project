@@ -12,7 +12,8 @@ if (!user_id) window.location.href = "login.html";
    LOAD ITEMS INTO DROPDOWN
 ============================ */
 function loadItems() {
-  fetch(`${API_ITEMS}?user_id=${user_id}`)
+  // FIX #6: send auth header
+  fetch(API_ITEMS, { headers: authHeaders() })
     .then(res => res.json())
     .then(items => {
       itemSelect.innerHTML = "";
@@ -32,6 +33,7 @@ function loadItems() {
 
 /* ============================
    LOAD TRANSACTIONS
+   FIX #13: API already returns ORDER BY date DESC, removed redundant .reverse()
 ============================ */
 function loadTransactions() {
   table.innerHTML = `
@@ -39,7 +41,8 @@ function loadTransactions() {
       <i class="fa-solid fa-spinner fa-spin"></i> Loading transactions...
     </td></tr>`;
 
-  fetch(`${API_TRANSACTIONS}?user_id=${user_id}`)
+  // FIX #6: send auth header
+  fetch(API_TRANSACTIONS, { headers: authHeaders() })
     .then(res => res.json())
     .then(data => {
       table.innerHTML = "";
@@ -53,8 +56,8 @@ function loadTransactions() {
         return;
       }
 
-      /* newest first */
-      [...data].reverse().forEach(t => {
+      // FIX #13: data already arrives newest-first from the server
+      data.forEach(t => {
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>${t.item_name}</td>
@@ -84,10 +87,11 @@ form.addEventListener("submit", e => {
     return;
   }
 
+  // FIX #6: authHeaders
   fetch(API_TRANSACTIONS, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id, item_id, type, quantity })
+    headers: authHeaders(),
+    body: JSON.stringify({ user_id, item_id, type, quantity }),
   })
   .then(res => res.json())
   .then(data => {

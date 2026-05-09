@@ -1,7 +1,6 @@
 /* shared toast notification — replaces all alert() / showMessage() calls
    Usage: showToast("message")  or  showToast("message", "success"|"danger")
 */
-
 function showToast(msg, type = "default") {
   let toast = document.getElementById("toast");
   if (!toast) {

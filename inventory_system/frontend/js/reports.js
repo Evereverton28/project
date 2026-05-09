@@ -13,10 +13,9 @@ const charts = {};
 /* ================================================================
    STATE
 ================================================================ */
-let activeDays      = 7;
-let lowThreshold    = 5;
-let cachedItems     = [];
-let cachedTxns      = [];
+// FIX #14: load persisted threshold so Reports and Dashboard stay in sync
+let activeDays       = 7;
+let lowThreshold     = parseInt(sessionStorage.getItem("lowThreshold") || "5");
 let cachedReportData = null;
 
 /* ================================================================
@@ -63,13 +62,23 @@ document.querySelectorAll(".range-btn").forEach(btn => {
 
 /* ================================================================
    LOW STOCK THRESHOLD SLIDER
+   FIX #14: persist to sessionStorage so Dashboard can read the same value
 ================================================================ */
-document.getElementById("lowThreshold").addEventListener("input", function () {
+const sliderEl = document.getElementById("lowThreshold");
+// Restore slider to the stored value on page load
+sliderEl.value = lowThreshold;
+document.getElementById("thresholdVal").textContent = lowThreshold;
+
+sliderEl.addEventListener("input", function () {
   lowThreshold = parseInt(this.value);
   document.getElementById("thresholdVal").textContent = lowThreshold;
 });
 
-document.getElementById("lowThreshold").addEventListener("change", loadReports);
+sliderEl.addEventListener("change", () => {
+  // FIX #14: save so dashboard picks up the new threshold
+  sessionStorage.setItem("lowThreshold", String(lowThreshold));
+  loadReports();
+});
 
 /* ================================================================
    APPLY / REFRESH BUTTON
@@ -85,35 +94,30 @@ document.getElementById("exportBtn").addEventListener("click", () => {
   const rep = cachedReportData;
   let csv = "";
 
-  /* summary */
   csv += "Summary\n";
   csv += `Total Items,${rep.total_items}\n`;
   csv += `Stock Value (KES),${rep.total_value}\n`;
   csv += `Transactions,${rep.total_transactions}\n`;
   csv += `Low Stock Items,${rep.low_stock.length}\n\n`;
 
-  /* by category */
   csv += "Stock by Category\nCategory,Qty,Value (KES)\n";
   rep.by_category.forEach(c => {
     csv += `"${c.category || 'Uncategorised'}",${c.total_qty},${(c.value || 0).toFixed(2)}\n`;
   });
   csv += "\n";
 
-  /* top items */
   csv += "Top 5 Most-Moved Items\nItem,Stock In,Stock Out,Transactions\n";
   rep.top_items.forEach(t => {
     csv += `"${t.item_name}",${t.total_in},${t.total_out},${t.txn_count}\n`;
   });
   csv += "\n";
 
-  /* low stock */
   csv += "Low Stock Items\nItem,Quantity\n";
   rep.low_stock.forEach(i => {
     csv += `"${i.item_name}",${i.quantity}\n`;
   });
   csv += "\n";
 
-  /* turnover */
   csv += "Turnover Rate\nItem,Current Stock,Units Out,Rate\n";
   rep.turnover.forEach(t => {
     csv += `"${t.item_name}",${t.current_stock},${t.total_out},${t.turnover_rate ?? "N/A"}\n`;
@@ -130,7 +134,7 @@ document.getElementById("exportBtn").addEventListener("click", () => {
 });
 
 /* ================================================================
-   CHART HELPER — destroy old instance before redraw
+   CHART HELPER
 ================================================================ */
 function makeChart(id, config) {
   if (charts[id]) { charts[id].destroy(); }
@@ -139,30 +143,29 @@ function makeChart(id, config) {
 
 /* ================================================================
    MAIN LOAD
+   FIX #6: authHeaders on every fetch
 ================================================================ */
 async function loadReports() {
   const { from, to } = getDateRange();
 
-  let url = `${API_BASE}/reports?user_id=${user_id}&low_threshold=${lowThreshold}`;
+  let url = `${API_BASE}/reports?low_threshold=${lowThreshold}`;
   if (from) url += `&date_from=${from}`;
   if (to)   url += `&date_to=${to}`;
 
-  let txnUrl = `${API_BASE}/transactions?user_id=${user_id}`;
-  if (from) txnUrl += `&date_from=${from}`;
-  if (to)   txnUrl += `&date_to=${to}`;
+  let txnUrl = `${API_BASE}/transactions`;
+  if (from) txnUrl += `?date_from=${from}`;
+  if (to)   txnUrl += `${from ? "&" : "?"}date_to=${to}`;
 
   try {
     const [repRes, itemsRes, txnRes] = await Promise.all([
-      fetch(url),
-      fetch(`${API_BASE}/items?user_id=${user_id}`),
-      fetch(txnUrl)
+      fetch(url,                     { headers: authHeaders() }),
+      fetch(`${API_BASE}/items`,     { headers: authHeaders() }),
+      fetch(txnUrl,                  { headers: authHeaders() }),
     ]);
     const rep   = await repRes.json();
     const items = await itemsRes.json();
     const txns  = await txnRes.json();
 
-    cachedItems      = items;
-    cachedTxns       = txns;
     cachedReportData = rep;
 
     renderStatCards(rep);
@@ -209,8 +212,8 @@ function renderCategoryBar(items) {
         data: Object.values(catMap),
         backgroundColor: PALETTE.slice(0, Object.keys(catMap).length),
         borderRadius: 4,
-        borderSkipped: false
-      }]
+        borderSkipped: false,
+      }],
     },
     options: {
       responsive: true,
@@ -218,14 +221,14 @@ function renderCategoryBar(items) {
       plugins: { legend: { display: false } },
       scales: {
         y: { beginAtZero: true, ticks: { stepSize: 1 } },
-        x: { ticks: { autoSkip: false } }
-      }
-    }
+        x: { ticks: { autoSkip: false } },
+      },
+    },
   });
 }
 
 /* ================================================================
-   CHART 2 — stock VALUE by category (pie) — new
+   CHART 2 — stock VALUE by category (pie)
 ================================================================ */
 function renderValuePie(byCategory) {
   const labels = byCategory.map(c => c.category || "Uncategorised");
@@ -238,14 +241,14 @@ function renderValuePie(byCategory) {
       datasets: [{
         data,
         backgroundColor: PALETTE.slice(0, labels.length),
-        borderWidth: 0
-      }]
+        borderWidth: 0,
+      }],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } }
-    }
+      plugins: { legend: { display: false } },
+    },
   });
 
   document.getElementById("valueLegend").innerHTML = labels.map((l, i) => `
@@ -270,15 +273,15 @@ function renderTxnDoughnut(txns) {
       datasets: [{
         data: [inCount, outCount],
         backgroundColor: ["#10b981", "#ef4444"],
-        borderWidth: 0
-      }]
+        borderWidth: 0,
+      }],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       cutout: "65%",
-      plugins: { legend: { display: false } }
-    }
+      plugins: { legend: { display: false } },
+    },
   });
 
   document.getElementById("txnLegend").innerHTML = `
@@ -288,18 +291,26 @@ function renderTxnDoughnut(txns) {
 }
 
 /* ================================================================
-   CHART 4 — transactions over time (line) with quantity axis
+   CHART 4 — transactions over time (line)
+   FIX #4: parse SQLite timestamps as local time ("2024-01-15 10:30:00" → "2024-01-15T10:30:00")
+   FIX #12: fallback uses activeDays (7) not hardcoded 30
 ================================================================ */
 function renderTimeChart(txns) {
   const { from, to } = getDateRange();
 
-  /* build date range */
   const endDate   = to   ? new Date(to)   : new Date();
-  const startDate = from ? new Date(from) : (() => { const d = new Date(); d.setDate(d.getDate() - (activeDays || 30)); return d; })();
+  const startDate = from
+    ? new Date(from)
+    : (() => {
+        const d = new Date();
+        // FIX #12: was (activeDays || 30) — now (activeDays || 7)
+        d.setDate(d.getDate() - (activeDays || 7));
+        return d;
+      })();
 
   const msPerDay = 86400000;
   const numDays  = Math.round((endDate - startDate) / msPerDay) + 1;
-  const days     = Math.min(numDays, 180); /* cap at 180 days to keep chart readable */
+  const days     = Math.min(numDays, 180);
 
   const labels    = [];
   const inCounts  = new Array(days).fill(0);
@@ -314,7 +325,8 @@ function renderTimeChart(txns) {
   }
 
   txns.forEach(t => {
-    const txDate = new Date(t.date);
+    // FIX #4: replace space with "T" so the date is parsed as local time, not UTC
+    const txDate = new Date(t.date.replace(" ", "T"));
     const idx    = Math.round((txDate - startDate) / msPerDay);
     if (idx >= 0 && idx < days) {
       if (t.type === "IN")  { inCounts[idx]++;  inQty[idx]  += t.quantity; }
@@ -335,7 +347,7 @@ function renderTimeChart(txns) {
           fill: true,
           tension: 0.4,
           pointRadius: 3,
-          yAxisID: "yCount"
+          yAxisID: "yCount",
         },
         {
           label: "Stock Out (count)",
@@ -346,7 +358,7 @@ function renderTimeChart(txns) {
           tension: 0.4,
           pointRadius: 3,
           borderDash: [5, 3],
-          yAxisID: "yCount"
+          yAxisID: "yCount",
         },
         {
           label: "Units In",
@@ -357,7 +369,7 @@ function renderTimeChart(txns) {
           pointRadius: 2,
           borderWidth: 1.5,
           borderDash: [2, 2],
-          yAxisID: "yQty"
+          yAxisID: "yQty",
         },
         {
           label: "Units Out",
@@ -368,9 +380,9 @@ function renderTimeChart(txns) {
           pointRadius: 2,
           borderWidth: 1.5,
           borderDash: [2, 2],
-          yAxisID: "yQty"
-        }
-      ]
+          yAxisID: "yQty",
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -382,22 +394,22 @@ function renderTimeChart(txns) {
           beginAtZero: true,
           position: "left",
           ticks: { stepSize: 1 },
-          title: { display: true, text: "Transactions" }
+          title: { display: true, text: "Transactions" },
         },
         yQty: {
           beginAtZero: true,
           position: "right",
           grid: { drawOnChartArea: false },
-          title: { display: true, text: "Units moved" }
+          title: { display: true, text: "Units moved" },
         },
-        x: { ticks: { autoSkip: true, maxTicksLimit: 10, maxRotation: 0 } }
-      }
-    }
+        x: { ticks: { autoSkip: true, maxTicksLimit: 10, maxRotation: 0 } },
+      },
+    },
   });
 }
 
 /* ================================================================
-   TOP 5 MOST-MOVED ITEMS TABLE — new
+   TOP 5 MOST-MOVED ITEMS TABLE
 ================================================================ */
 function renderTopItems(topItems) {
   const tbody = document.getElementById("topItemsBody");
@@ -416,7 +428,7 @@ function renderTopItems(topItems) {
 }
 
 /* ================================================================
-   TURNOVER RATE TABLE — new
+   TURNOVER RATE TABLE
 ================================================================ */
 function renderTurnover(turnover) {
   const tbody = document.getElementById("turnoverBody");
@@ -469,7 +481,7 @@ function renderLowStock(lowStock) {
 }
 
 /* ================================================================
-   INIT — set default date range to last 7 days and load
+   INIT
 ================================================================ */
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("dateFrom").value = daysAgoStr(7);

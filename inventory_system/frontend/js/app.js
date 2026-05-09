@@ -16,7 +16,8 @@ function loadItems() {
       </td>
     </tr>`;
 
-  fetch(`${API_ITEMS}?user_id=${user_id}`)
+  // FIX #6: pass Authorization header
+  fetch(API_ITEMS, { headers: authHeaders() })
     .then(res => res.json())
     .then(items => {
       itemsTableBody.innerHTML = "";
@@ -75,10 +76,11 @@ itemForm.addEventListener("submit", e => {
     return;
   }
 
+  // FIX #6: authHeaders includes Bearer token
   fetch(API_ITEMS, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id, item_name: name, category, quantity, unit_price })
+    headers: authHeaders(),
+    body: JSON.stringify({ user_id, item_name: name, category, quantity, unit_price }),
   })
   .then(res => res.json())
   .then(() => {
@@ -95,7 +97,10 @@ itemForm.addEventListener("submit", e => {
 function deleteItem(item_id) {
   if (!confirm("Delete this item? This cannot be undone.")) return;
 
-  fetch(`${API_ITEMS}/${item_id}?user_id=${user_id}`, { method: "DELETE" })
+  fetch(`${API_ITEMS}/${item_id}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  })
     .then(res => res.json())
     .then(() => {
       showToast("Item deleted", "danger");
@@ -106,15 +111,22 @@ function deleteItem(item_id) {
 
 /* ============================
    EDIT ITEM (inline)
+   FIX #5: strip all non-numeric chars (except ".") from price cell
+   FIX #11: editItem marks the row so filterItems won't corrupt it
 ============================ */
 function editItem(id, btn) {
   const row   = btn.closest("tr");
   const cells = row.querySelectorAll("td");
 
   const name     = cells[0].innerText.trim();
-  const category = cells[1].innerText.trim();
+  const category = cells[1].innerText === "—" ? "" : cells[1].innerText.trim();
   const quantity = cells[2].innerText.replace(/\s+.*/,"").trim();
-  const price    = cells[3].innerText.replace("KES ", "").replace(/,/g, "").trim();
+
+  // FIX #5: robust price parsing — strip currency label and all non-numeric chars except "."
+  const price = cells[3].innerText.replace("KES", "").replace(/[^0-9.]/g, "").trim();
+
+  // FIX #11: mark row as editing so filterItems skips it
+  row.dataset.editing = "true";
 
   row.innerHTML = `
     <td><input value="${name}"></td>
@@ -125,10 +137,18 @@ function editItem(id, btn) {
       <button class="action-btn edit-btn" onclick="saveItem(${id}, this)" title="Save">
         <i class="fa-solid fa-check"></i>
       </button>
-      <button class="action-btn delete-btn" onclick="loadItems()" title="Cancel">
+      <button class="action-btn delete-btn" onclick="cancelEdit(this)" title="Cancel">
         <i class="fa-solid fa-xmark"></i>
       </button>
     </td>`;
+}
+
+/* ============================
+   CANCEL EDIT
+   FIX #11: reload instead of leaving a broken row
+============================ */
+function cancelEdit(btn) {
+  loadItems();
 }
 
 /* ============================
@@ -143,7 +163,7 @@ function saveItem(id, btn) {
     category:   inputs[1].value.trim(),
     quantity:   parseInt(inputs[2].value),
     unit_price: parseFloat(inputs[3].value),
-    user_id
+    user_id,
   };
 
   if (!updatedItem.item_name || !updatedItem.category) {
@@ -151,10 +171,11 @@ function saveItem(id, btn) {
     return;
   }
 
+  // FIX #6: authHeaders
   fetch(`${API_ITEMS}/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updatedItem)
+    headers: authHeaders(),
+    body: JSON.stringify(updatedItem),
   })
   .then(res => res.json())
   .then(() => {
@@ -166,10 +187,16 @@ function saveItem(id, btn) {
 
 /* ============================
    SEARCH FILTER
+   FIX #11: skip rows that are in edit mode
 ============================ */
 function filterItems() {
   const search = document.getElementById("searchInput").value.toLowerCase();
   document.querySelectorAll("#itemsTableBody tr").forEach(row => {
+    // FIX #11: never hide the active edit row
+    if (row.dataset.editing === "true") {
+      row.style.display = "";
+      return;
+    }
     row.style.display = row.innerText.toLowerCase().includes(search) ? "" : "none";
   });
 }
