@@ -573,3 +573,141 @@ table td input:focus { border-color: var(--primary); }
   #transactionForm input,
   #transactionForm select { flex: 1 1 100%; }
 }
+
+/* ================================================================
+   REPORTS — append these rules to the bottom of styles.css
+================================================================ */
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 1.5rem;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-group label {
+  font-size: 12px;
+  color: var(--text-muted, #6b7280);
+  font-weight: 500;
+}
+
+.filter-group input[type="date"] {
+  padding: 6px 10px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--input-bg, #f9fafb);
+  color: var(--text-color, #111827);
+}
+
+.filter-group input[type="range"] {
+  width: 140px;
+  accent-color: var(--primary, #3b82f6);
+}
+
+/* Quick range toggle buttons */
+.btn-group {
+  display: flex;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.range-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  background: var(--input-bg, #f9fafb);
+  color: var(--text-muted, #6b7280);
+  cursor: pointer;
+  border-right: 1px solid var(--border-color, #e5e7eb);
+  transition: background 0.15s, color 0.15s;
+}
+
+.range-btn:last-child { border-right: none; }
+
+.range-btn.active,
+.range-btn:hover {
+  background: var(--primary, #3b82f6);
+  color: #fff;
+}
+
+/* Action buttons */
+.filter-actions {
+  flex-direction: row;
+  gap: 8px;
+  align-self: flex-end;
+}
+
+.btn-primary,
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+}
+
+.btn-primary {
+  background: var(--primary, #3b82f6);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: var(--input-bg, #f1f5f9);
+  color: var(--text-color, #111827);
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.btn-primary:hover,
+.btn-secondary:hover { opacity: 0.85; }
+
+/* Rank badge in top items table */
+.rank-badge {
+  display: inline-block;
+  background: var(--primary, #3b82f6);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-right: 4px;
+}
+
+/* Turnover bar */
+.turnover-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: var(--border-color, #e5e7eb);
+  border-radius: 99px;
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.turnover-bar {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--text-muted, #9ca3af);
+  transition: width 0.4s ease;
+}
+
+.turnover-bar.success { background: #10b981; }
+.turnover-bar.danger  { background: #ef4444; }
