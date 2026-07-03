@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AniVault — My Anime List</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Inter:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-icon">⛩</span>
+        <div>
+          <h1 class="brand-title">AniVault</h1>
+          <p class="brand-sub">Personal Collection</p>
+        </div>
+      </div>
+      <div class="header-stats" id="headerStats">
+        <div class="stat-pill">
+          <span class="stat-num" id="statTotal">0</span>
+          <span class="stat-lbl">Total</span>
+        </div>
+        <div class="stat-pill completed">
+          <span class="stat-num" id="statCompleted">0</span>
+          <span class="stat-lbl">Completed</span>
+        </div>
+        <div class="stat-pill watching">
+          <span class="stat-num" id="statWatching">0</span>
+          <span class="stat-lbl">Watching</span>
+        </div>
+        <div class="stat-pill planned">
+          <span class="stat-num" id="statPlanned">0</span>
+          <span class="stat-lbl">Planned</span>
+        </div>
+      </div>
+      <button class="btn-add" id="btnAdd">
+        <span>+</span> Add Anime
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTROLS BAR -->
+  <div class="controls-bar">
+    <div class="controls-inner">
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search anime…" />
+        <button class="search-clear" id="searchClear" title="Clear">✕</button>
+      </div>
+
+      <div class="filter-tabs" id="filterTabs">
+        <button class="ftab active" data-filter="all">All</button>
+        <button class="ftab" data-filter="completed">✓✓ Completed</button>
+        <button class="ftab" data-filter="watching">✓ Watching</button>
+        <button class="ftab" data-filter="planned">Not Started</button>
+      </div>
+
+      <div class="controls-right">
+        <div class="sort-wrap">
+          <select id="sortSelect" class="sort-select">
+            <option value="default">Sort: Default</option>
+            <option value="alpha">A → Z</option>
+            <option value="status">By Status</option>
+          </select>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="view-toggle">
+          <button class="vtoggle active" id="viewGrid" title="Grid view">
+            <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+          </button>
+          <button class="vtoggle" id="viewList" title="List view">
+            <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="2" rx="1"/><rect x="1" y="7" width="14" height="2" rx="1"/><rect x="1" y="12" width="14" height="2" rx="1"/></svg>
+          </button>
+        </div>
+
+        <!-- Import / Export -->
+        <div class="io-btns">
+          <button class="io-btn" id="btnExportJSON">↓ JSON</button>
+          <button class="io-btn" id="btnExportCSV">↓ CSV</button>
+          <button class="io-btn" id="btnImport">↑ Import</button>
+          <input type="file" id="importFile" accept=".json,.csv" style="display:none" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRID -->
+  <main class="main-content">
+    <div class="anime-grid" id="animeGrid"></div>
+    <div class="anime-list-view" id="animeListView" style="display:none">
+      <table class="list-table">
+        <thead>
+          <tr>
+            <th class="col-drag"></th>
+            <th class="col-num">#</th>
+            <th class="col-cover"></th>
+            <th class="col-name">Title</th>
+            <th class="col-status">Status</th>
+            <th class="col-ep">Progress</th>
+            <th class="col-notes">Notes</th>
+            <th class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="animeListBody"></tbody>
+      </table>
+    </div>
+    <div class="empty-state" id="emptyState" style="display:none">
+      <span class="empty-icon">⊘</span>
+      <p>No anime found</p>
+    </div>
+  </main>
+
+  <!-- DETAIL DRAWER -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="detail-drawer" id="detailDrawer">
+    <div class="drawer-header">
+      <h2 class="drawer-title" id="drawerTitle">—</h2>
+      <div class="drawer-header-btns">
+        <button class="drawer-edit-btn" id="drawerEditBtn">✎ Edit</button>
+        <button class="drawer-close" id="drawerClose">✕</button>
+      </div>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-cover-wrap">
+        <div id="drawerCoverArea"></div>
+      </div>
+      <div class="drawer-meta">
+        <div id="drawerBadge"></div>
+        <div class="drawer-info-row" id="drawerEpRow" style="display:none">
+          <span class="drawer-info-lbl">Progress</span>
+          <span class="drawer-info-val" id="drawerEp"></span>
+        </div>
+        <div class="drawer-info-row" id="drawerNotesRow" style="display:none">
+          <span class="drawer-info-lbl">Notes</span>
+          <span class="drawer-info-val" id="drawerNotes"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Status Change -->
+    <div class="drawer-status-section">
+      <p class="drawer-section-lbl">Quick Status</p>
+      <div class="drawer-status-picker" id="drawerStatusPicker">
+        <button class="dsp-btn" data-status="planned">Not Started</button>
+        <button class="dsp-btn" data-status="watching">✓ Watching</button>
+        <button class="dsp-btn" data-status="completed">✓✓ Done</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ADD / EDIT MODAL -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Add Anime</h2>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Anime Name <span class="req">*</span></label>
+          <input type="text" id="formName" class="form-input" placeholder="e.g. Fullmetal Alchemist: Brotherhood" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Status</label>
+            <div class="status-picker" id="statusPicker">
+              <button class="sp-btn active" data-status="planned">Not Started</button>
+              <button class="sp-btn" data-status="watching">✓ Watching</button>
+              <button class="sp-btn" data-status="completed">✓✓ Completed</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Current Episode / Progress</label>
+            <input type="text" id="formEpisode" class="form-input" placeholder="e.g. Ep 12 / Season 2" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="formNotes" class="form-input form-textarea" placeholder="Optional notes…"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="btnCancel">Cancel</button>
+        <button class="btn-save" id="btnSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="storage.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
