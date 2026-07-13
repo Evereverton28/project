@@ -74,14 +74,12 @@ const AniStorage = {
     await req('/meta', { method: 'POST', body: JSON.stringify(partial) });
   },
 
-  // ── Cover cache ───────────────────────
-  async getCachedCover(name) {
-    const res = await req(`/cover-cache/${encodeURIComponent(name)}`);
-    return res.cached ? (res.url || null) : null;
-  },
-
-  async setCachedCover(name, url) {
-    await req('/cover-cache', { method: 'POST', body: JSON.stringify({ name, url }) });
+  // ── Cover art (now resolved + cached server-side) ─
+  // Backend handles Jikan lookup, local download, and caching by mal_id.
+  // This just asks the backend "get me this anime's cover" and gets back
+  // the updated row (coverUrl will be a local /static/images/<id>.jpg path).
+  async fetchCover(id) {
+    return req(`/anime/${id}/cover`, { method: 'POST' });
   },
 
   // ── Import / Export ───────────────────

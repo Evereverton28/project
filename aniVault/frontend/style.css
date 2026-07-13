@@ -493,7 +493,17 @@ body::after {
 .drawer-close { background: none; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: var(--tr); }
 .drawer-close:hover { color: var(--crimson); background: rgba(255,31,77,0.15); transform: rotate(180deg) scale(1.2); }
 
-.drawer-body { padding: 20px; display: flex; gap: 16px; flex-shrink: 0; }
+/* Scrollable middle section — this is what fixes long descriptions.
+   flex: 1 lets it fill the space between the pinned header and pinned
+   status picker; min-height: 0 is required for a flex child to be
+   allowed to shrink below its content size (otherwise overflow-y:auto
+   silently does nothing in a flex column). */
+.drawer-body {
+  padding: 20px; display: flex; gap: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
 .drawer-cover-wrap { position: relative; width: 100px; flex-shrink: 0; }
 .drawer-cover {
   width: 100px; height: 146px; object-fit: cover; border-radius: var(--radius-sm); display: block;
@@ -502,7 +512,7 @@ body::after {
 }
 @keyframes coverReveal { from { opacity: 0; transform: scale(0.8) translateY(10px) rotate(-3deg); } to { opacity: 1; transform: scale(1) translateY(0) rotate(0); } }
 .drawer-cover-placeholder { width: 100px; height: 146px; background: linear-gradient(160deg,#1c2448,#0a0d1c); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 36px; opacity: 0.4; }
-.drawer-meta { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.drawer-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
 .drawer-badge {
   display: inline-block; padding: 5px 14px; border-radius: 50px; font-size: 12px; font-weight: 700; align-self: flex-start;
   animation: badgePop 0.4s var(--pop) both;
@@ -513,9 +523,9 @@ body::after {
 .drawer-badge.planned   { background: rgba(38,47,77,0.4); color: var(--text-secondary); border: 1px solid var(--border); }
 .drawer-info-row { display: flex; flex-direction: column; gap: 3px; }
 .drawer-info-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); font-weight: 700; }
-.drawer-info-val { font-size: 13px; color: var(--text-primary); line-height: 1.5; }
+.drawer-info-val { font-size: 13px; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 
-.drawer-status-section { padding: 16px 20px; border-top: 1px solid var(--border); margin-top: auto; }
+.drawer-status-section { padding: 16px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
 .drawer-section-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); font-weight: 700; margin-bottom: 10px; }
 .drawer-status-picker { display: flex; gap: 6px; }
 .dsp-btn { flex: 1; padding: 8px 6px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-secondary); font-size: 11px; font-weight: 600; cursor: pointer; transition: var(--tr); font-family: 'Inter', sans-serif; text-align: center; }

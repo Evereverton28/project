@@ -1,5 +1,10 @@
-"""Run once, after `python app.py` has been started at least once
-(so anivault.db / tables exist), to load the original default list:
+"""
+Optional manual seeding tool.
+
+NOTE: app.py now auto-seeds from seed_data.json on first run (see init_db()
+in app.py), so for a fresh install you don't need to run this at all —
+just start the app normally. This script is kept for the case where you
+want to force-reseed after deleting backend/data/anivault.db.
 
     python seed.py
 """

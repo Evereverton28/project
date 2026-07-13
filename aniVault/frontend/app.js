@@ -18,40 +18,28 @@ let undoBuffer     = null;
 let dragSrcId      = null;
 
 // ── Cover Fetching ────────────────────────
-async function fetchCover(name) {
-  const cached = await AniStorage.getCachedCover(name);
-  if (cached !== null) return cached;
-
-  try {
-    const q   = encodeURIComponent(name);
-    const res = await fetch(`https://api.jikan.moe/v4/anime?q=${q}&limit=1&sfw=true`);
-    if (!res.ok) return null;
-    const json = await res.json();
-    const img  = json?.data?.[0]?.images?.jpg?.large_image_url ?? null;
-    await AniStorage.setCachedCover(name, img ?? '');
-    return img;
-  } catch {
-    return null;
-  }
-}
-
+// The backend now owns the whole Jikan lookup + local download + cache
+// step (see backend/image_cache.py). This just asks it to resolve one
+// anime's cover and applies the result.
 async function loadMissingCovers(list) {
   const todo = list.filter(a => !a.coverFetched);
   for (let i = 0; i < todo.length; i++) {
     const anime = todo[i];
-    const cover = await fetchCover(anime.name);
 
-    await AniStorage.patchEntry(anime.id, { coverUrl: cover, coverFetched: true });
-
-    const idx = animeList.findIndex(a => a.id === anime.id);
-    if (idx !== -1) {
-      animeList[idx].coverUrl     = cover;
-      animeList[idx].coverFetched = true;
+    let updated;
+    try {
+      updated = await AniStorage.fetchCover(anime.id);
+    } catch (err) {
+      console.error(`Cover fetch failed for "${anime.name}":`, err);
+      continue; // don't let one bad lookup stop the rest of the batch
     }
 
-    if (cover) updateCoverInDOM(anime.id, cover, anime);
+    const idx = animeList.findIndex(a => a.id === anime.id);
+    if (idx !== -1) animeList[idx] = updated;
 
-    // Jikan rate limit: 3 req/sec max → 350ms gap is safe
+    if (updated.coverUrl) updateCoverInDOM(anime.id, updated.coverUrl, updated);
+
+    // Be polite to Jikan's rate limit even though the backend also paces itself
     if (i < todo.length - 1) await delay(350);
   }
 }
@@ -60,7 +48,7 @@ function updateCoverInDOM(id, cover, anime) {
   const cardCover = grid.querySelector(`[data-id="${id}"] .card-cover`);
   if (cardCover) {
     cardCover.innerHTML = `
-      <img src="${cover}" alt="${escAttr(anime.name)}" loading="lazy"
+      <img src="${cover}" alt="${escAttr(anime.name)}" loading="lazy" draggable="false"
            onerror="this.outerHTML='<div class=cover-placeholder><span class=cover-placeholder-icon>⛩</span></div>'" />
       <span class="card-status-badge">${statusLabel(anime.status)}</span>
       ${anime.episode ? `<span class="card-episode-tag">${escHtml(anime.episode)}</span>` : ''}
@@ -69,7 +57,7 @@ function updateCoverInDOM(id, cover, anime) {
   }
   const listPlaceholder = listBody.querySelector(`[data-id="${id}"] .list-thumb-placeholder`);
   if (listPlaceholder) {
-    listPlaceholder.outerHTML = `<img class="list-thumb" src="${cover}" alt="" loading="lazy"
+    listPlaceholder.outerHTML = `<img class="list-thumb" src="${cover}" alt="" loading="lazy" draggable="false"
       onerror="this.outerHTML='<div class=list-thumb-placeholder>⛩</div>'" />`;
   }
   if (drawerAnimeId === id) renderDrawerCover(cover);
@@ -185,7 +173,7 @@ function renderCard(anime, index) {
   card.draggable  = true;
 
   const coverHtml = anime.coverUrl
-    ? `<img src="${anime.coverUrl}" alt="${escAttr(anime.name)}" loading="lazy"
+    ? `<img src="${anime.coverUrl}" alt="${escAttr(anime.name)}" loading="lazy" draggable="false"
            onerror="this.outerHTML='<div class=cover-placeholder><span class=cover-placeholder-icon>⛩</span><span class=cover-placeholder-text>${escAttr(anime.name)}</span></div>'" />`
     : `<div class="cover-placeholder">
          <span class="cover-placeholder-icon">⛩</span>
@@ -230,7 +218,7 @@ function renderRow(anime, num) {
   tr.draggable  = true;
 
   const thumb = anime.coverUrl
-    ? `<img class="list-thumb" src="${anime.coverUrl}" alt="" loading="lazy"
+    ? `<img class="list-thumb" src="${anime.coverUrl}" alt="" loading="lazy" draggable="false"
            onerror="this.outerHTML='<div class=list-thumb-placeholder>⛩</div>'" />`
     : `<div class="list-thumb-placeholder">⛩</div>`;
 
@@ -415,6 +403,7 @@ async function saveAnime() {
         notes:        formNotes.value.trim(),
         coverFetched: sameTitle ? animeList[idx].coverFetched : false,
         coverUrl:     sameTitle ? animeList[idx].coverUrl     : null,
+        malId:        sameTitle ? animeList[idx].malId        : null,
       };
       const updated = await AniStorage.updateEntry(editingId, fields);
       animeList[idx] = updated;
@@ -594,6 +583,13 @@ document.addEventListener('keydown', e => {
     saveAnime();
   }
 });
+
+// ── Global drag safety net ────────────────
+// Without this, if a card drag ends slightly off a valid drop target,
+// the browser's default behavior is to navigate the tab to the image
+// (looks like "the whole page reloads").
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => e.preventDefault());
 
 // ── Init ──────────────────────────────────
 (async function init() {
